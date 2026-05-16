@@ -150,6 +150,8 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 #preview .xred-box{border-left:4px solid #ef4444;background:#fff5f5;padding:8px 14px;margin:8px 0;color:#dc2626;font-size:13px;font-weight:700;}
 #preview .xinfo-box{border-left:4px solid #93c5fd;background:#eff6ff;padding:8px 14px;margin:8px 0;color:#1d4ed8;font-size:13px;border-radius:0 4px 4px 0;}
 #preview .xglass-box{background:rgba(200,200,210,.12);border:1px solid rgba(200,200,210,.4);padding:10px 16px;border-radius:8px;margin:8px 0;color:#444;font-size:13px;}
+#preview .xsmall-text{font-size:11px;color:#888;line-height:1.5;}
+#preview .xspoiler-wrap{margin:6px 0;}
 #preview .xcard-box{border:1px solid #ddd;border-radius:8px;overflow:hidden;margin:8px 0;}
 #preview .xcard-title{background:#f5f5f5;padding:8px 14px;font-weight:700;font-size:13px;border-bottom:1px solid #ddd;color:#333;}
 #preview .xcard-body{padding:10px 14px;font-size:13px;color:#555;}
@@ -462,7 +464,7 @@ function checkSel(){const s=editor.selectionStart,e=editor.selectionEnd,has=s!==
 ═══════════════════════════════════════════ */
 function insertAtCursor(txt){pushUndo(editor.value);const s=editor.selectionStart,e=editor.selectionEnd;editor.value=editor.value.slice(0,s)+txt+editor.value.slice(e);editor.selectionStart=editor.selectionEnd=s+txt.length;editor.focus();updatePreview();updateStats();}
 function wrapSel(tag,attr){const{start,end,text}=savedSel;const open=attr?`[${tag}=${attr}]`:`[${tag}]`;const close=`[/${tag}]`;pushUndo(editor.value);const wrapped=open+text+close;editor.value=editor.value.slice(0,start)+wrapped+editor.value.slice(end);editor.selectionStart=start;editor.selectionEnd=start+wrapped.length;editor.focus();savedSel={start:0,end:0,text:''};document.body.classList.remove('has-selection');document.getElementById('selectionBar').classList.remove('visible');updatePreview();updateStats();}
-const directWrap=['xgold','xcenter','xgban','xnote','xwarn','xblue','xgreen','xred','xinfo','xglass','quote','xquote','xtag','b','i','u','strike'];
+const directWrap=['xgold','xcenter','xgban','xnote','xwarn','xblue','xgreen','xred','xinfo','xglass','xsmall','quote','xquote','xtag','b','i','u','strike'];
 function wrapOrModal(tag){if(savedSel.text&&directWrap.includes(tag)){wrapSel(tag);}else{openModal(tag);}}
 function wrapFmt(tag,attr){if(savedSel.text){wrapSel(tag,attr);}else{const cursor=`[${tag}${attr?'='+attr:''}][/${tag}]`;insertAtCursor(cursor);const pos=editor.selectionStart-(tag.length+3+(attr?attr.length+1:0));editor.selectionStart=editor.selectionEnd=pos;}}
 
@@ -559,6 +561,7 @@ function buildLeftPanel(){
       {tag:'xgold',icon:'🏷',label:lang==='zh'?'章節標題':'Section Title',code:'xgold',wrap:true},
       {tag:'xcenter',icon:'⬛',label:lang==='zh'?'置中標題':'Center Title',code:'xcenter',wrap:true},
       {tag:'xgban',icon:'🟨',label:lang==='zh'?'金色橫幅':'Gold Banner',code:'xgban',wrap:true},
+      {tag:'xsmall',icon:'🔡',label:lang==='zh'?'小字補充':'Small Text',code:'xsmall',wrap:true},
     ]},
     {key:'callout',title:lang==='zh'?'💡 提示框':'💡 Callouts',tags:[
       {tag:'xnote',icon:'📌',label:lang==='zh'?'重點框（黃）':'Note (Yellow)',code:'xnote',wrap:true},
@@ -568,6 +571,7 @@ function buildLeftPanel(){
       {tag:'xred',icon:'🚫',label:lang==='zh'?'禁止事項（紅）':'Forbidden (Red)',code:'xred',wrap:true},
       {tag:'xinfo',icon:'ℹ️',label:lang==='zh'?'資訊框（藍）':'Info Box (Blue)',code:'xinfo',wrap:true},
       {tag:'xgold',icon:'🏅',label:lang==='zh'?'金色標題條':'Gold Title',code:'xgold',wrap:true},
+      {tag:'xspoiler',icon:'🔽',label:lang==='zh'?'劇透文字':'Spoiler',code:'xspoiler',modal:true},
       {tag:'xglass',icon:'🪟',label:lang==='zh'?'玻璃風格':'Glass Style',code:'xglass',wrap:true},
       {tag:'xcard',icon:'🃏',label:lang==='zh'?'卡片':'Card',code:'xcard',modal:true},
     ]},
@@ -648,7 +652,7 @@ function openModal(tag){
     xcard:'🃏 卡片',quote:'「」引用框 type2（框格）',xquote:'｜引用框 type1（斜體）',
     xtag:'🔖 標籤',xrate:'⭐ 評分',xbtn:'🔘 按鈕連結',
     xyoutube:'▶️ YouTube 長影片',xsyoutube:'📱 YouTube直立影片',xmp4:'🎥 MP4 影片',xvmp4:'📹 直立 MP4',xmp3:'🎵 MP3 音樂',xtiktok:'🎶 TikTok',xsound:'🔊 SoundCloud',xsendvid:'📺 Sendvid 影片',xmap:'🗺 地圖座標（xmap）',xmaplink:'📍 地點名稱（xmaplink）',
-    ximg:'🖼 插入圖片',postimages:'📤 Postimages 半自動上傳',catbox:'🐱 貓盒 Catbox 上傳',gallery:'🗂 圖庫',
+    xspoiler:'🔽 劇透文字（xspoiler）',xsmall:'🔡 小字補充（xsmall）',ximg:'🖼 插入圖片',postimages:'📤 Postimages 半自動上傳',catbox:'🐱 貓盒 Catbox 上傳',gallery:'🗂 圖庫',
     dialog:'🗨 對話泡泡',xtable:'📋 表格',hide:'🔐 加密內容',
     size:'A↕ 文字大小',colorpicker:'🎨 顏色選擇',
   };
@@ -660,6 +664,11 @@ function openModal(tag){
   switch(tag){
     case 'xgold':case 'xcenter':case 'xgban':case 'xnote':case 'xwarn':case 'xblue':case 'xgreen':case 'xred':case 'xinfo':case 'xglass':
       html=`<label>內容</label><input id="f1" value="${esc(selVal)}" placeholder="輸入內容">`;break;
+    case 'xspoiler':
+      html=`<label>按鈕文字（點擊後展開）</label><input id="f1" placeholder="例：點我查看" value="點我查看">
+      <label>劇透內容</label><textarea id="f2">${esc(selVal)}</textarea>`;break;
+    case 'xsmall':
+      html=`<label>小字補充內容</label><input id="f1" value="${esc(selVal)}" placeholder="例：資料來源：會員自行整理，僅供參考。">`;break;
     case 'xcard':
       html=`<label>卡片標題</label><input id="f1" placeholder="例：推薦作品"><label>卡片內容</label><textarea id="f2">${esc(selVal)}</textarea>`
 ;break;
@@ -927,6 +936,8 @@ function confirmInsert(){
   switch(currentTag){
     case 'xgold':case 'xcenter':case 'xgban':case 'xnote':case 'xwarn':case 'xblue':case 'xgreen':case 'xred':case 'xinfo':case 'xglass':case 'xtag':
       code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
+    case 'xspoiler': code=`[xspoiler=${g('f1')}]${g('f2')}[/xspoiler]\n`;break;
+    case 'xsmall': code=`[xsmall]${g('f1')}[/xsmall]\n`;break;
     case 'xcard': code=`[xcard=${g('f1')}]${g('f2')}[/xcard]\n`;break;
 
     case 'quote':case 'xquote': code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
@@ -1056,6 +1067,7 @@ function updatePreview(){
     ['quote',c=>`<div class="quote-box">${c}</div>`],
     ['xtag',c=>`<span class="xtag-pill">${c}</span>`],
     ['xrate',c=>`<span class="xrate-badge">★ ${c} / 10</span>`],
+    ['xsmall',c=>`<span class="xsmall-text">${c}</span>`],
     ['ximg',c=>`<img class="forum-img" src="${c}" onerror="this.style.display='none'">`],
     ['img',c=>`<img class="forum-img" src="${c}" onerror="this.style.display='none'">`],
     ['xmp4',c=>`<video class="forum-img" controls style="max-width:100%;border-radius:6px;margin:4px 0;"><source src="${c}" type="video/mp4">MP4: ${c}</video>`],
@@ -1092,6 +1104,14 @@ function updatePreview(){
   h=h.replace(/\[xsendvid\]([\s\S]*?)\[\/xsendvid\]/g,
     (_,id)=>`<iframe src="https://sendvid.com/embed/${id.trim()}" style="width:100%;aspect-ratio:16/9;border-radius:6px;border:none;margin:6px 0;display:block;" allowfullscreen loading="lazy"></iframe>`);
 
+  // xspoiler — clickable spoiler
+  h=h.replace(/\[xspoiler=([^\]]+)\]([\s\S]*?)\[\/xspoiler\]/g,(_,btn,body)=>{
+    const id='sp'+Math.random().toString(36).slice(2,7);
+    return `<div class="xspoiler-wrap">
+      <div id="${id}_btn" onclick="(function(){var b=document.getElementById('${id}_body'),a=document.getElementById('${id}_btn');var open=b.style.display!=='none';b.style.display=open?'none':'block';a.innerHTML=(open?'▶ ':'▼ ')+'${btn.replace(/'/g,"\'")}';})();" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#f0f0f0;border:1px solid #ddd;border-radius:5px;font-size:13px;user-select:none;">▶ ${btn}</div>
+      <div id="${id}_body" style="display:none;padding:10px 14px;background:#fafafa;border:1px solid #ddd;border-top:none;border-radius:0 0 5px 5px;font-size:13px;color:#333;">${body.trim()}</div>
+    </div>`;
+  });
   // xcard
   h=h.replace(/\[xcard=([^\]]+)\]([\s\S]*?)\[\/xcard\]/g,
     (_,t_,b)=>`<div class="xcard-box"><div class="xcard-title">${t_}</div><div class="xcard-body">${b.trim()}</div></div>`);
