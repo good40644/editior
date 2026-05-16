@@ -144,11 +144,11 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 #preview .xgban-box{background:linear-gradient(90deg,#ffe066,#ffd000);text-align:center;font-weight:700;color:#5a3e00;padding:14px;border-radius:4px;font-size:16px;margin:8px 0;}
 #preview .xhr-line{border:none;border-top:2px solid #c8a000;margin:12px 0;opacity:.6;}
 #preview .xnote-box{border-left:4px solid #e6b800;background:#fffde7;padding:8px 14px;margin:8px 0;color:#5c4a00;font-size:13px;}
-#preview .xwarn-box{border-left:4px solid #ef4444;background:#fff5f5;padding:8px 14px;margin:8px 0;color:#7f1d1d;font-size:13px;}
-#preview .xblue-box{border-left:4px solid #3b82f6;background:#eff6ff;padding:8px 14px;margin:8px 0;color:#1e3a5f;font-size:13px;}
-#preview .xgreen-box{border-left:4px solid #22c55e;background:#f0fdf4;padding:8px 14px;margin:8px 0;color:#14532d;font-size:13px;}
-#preview .xred-box{border-left:4px solid #ef4444;background:#fff5f5;padding:8px 14px;margin:8px 0;color:#7f1d1d;font-size:13px;}
-#preview .xinfo-box{border-left:4px solid #60a5fa;background:#f0f8ff;padding:8px 14px;margin:8px 0;color:#1e3a5f;font-size:13px;font-style:italic;}
+#preview .xwarn-box{border-left:4px solid #f87171;background:#fff1f1;padding:8px 14px;margin:8px 0;color:#b91c1c;font-size:13px;border-radius:0 4px 4px 0;}
+#preview .xblue-box{border-left:4px solid #3b82f6;background:#eff6ff;padding:8px 14px;margin:8px 0;color:#1d4ed8;font-size:13px;font-weight:700;}
+#preview .xgreen-box{border-left:4px solid #22c55e;background:#f0fdf4;padding:8px 14px;margin:8px 0;color:#15803d;font-size:13px;font-weight:700;}
+#preview .xred-box{border-left:4px solid #ef4444;background:#fff5f5;padding:8px 14px;margin:8px 0;color:#dc2626;font-size:13px;font-weight:700;}
+#preview .xinfo-box{border-left:4px solid #93c5fd;background:#eff6ff;padding:8px 14px;margin:8px 0;color:#1d4ed8;font-size:13px;border-radius:0 4px 4px 0;}
 #preview .xglass-box{background:rgba(200,200,210,.12);border:1px solid rgba(200,200,210,.4);padding:10px 16px;border-radius:8px;margin:8px 0;color:#444;font-size:13px;}
 #preview .xcard-box{border:1px solid #ddd;border-radius:8px;overflow:hidden;margin:8px 0;}
 #preview .xcard-title{background:#f5f5f5;padding:8px 14px;font-weight:700;font-size:13px;border-bottom:1px solid #ddd;color:#333;}
@@ -171,17 +171,99 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 #preview .media-ph{background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin:6px 0;font-size:12px;color:#888;text-align:center;}
 #preview img.forum-img{max-width:100%;border-radius:4px;margin:4px 0;display:block;}
 #preview .yt-embed{width:100%;aspect-ratio:16/9;border-radius:6px;border:none;margin:6px 0;}
+
+/* ══════════════════════════════════════════
+   MOBILE RESPONSIVE
+══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  body { height: auto; overflow: auto; }
+
+  header { padding: 8px 12px; gap: 8px; }
+  .logo { font-size: 15px; }
+  .hint-badge { display: none; }
+  .header-actions { gap: 4px; flex-wrap: wrap; }
+  .btn { padding: 4px 9px; font-size: 11px; }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Left panel: horizontal scrollable tag strip */
+  .panel-left {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: row;
+    max-height: none;
+    padding: 6px 4px;
+    gap: 0;
+  }
+  .section-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .section-header { padding: 4px 8px; border-bottom: none; }
+  .section-header .sec-arrow { display: none; }
+  .section-header .sec-title { font-size: 9px; writing-mode: vertical-rl; text-orientation: mixed; padding: 2px 0; letter-spacing: 1px; }
+  .section-body { display: flex !important; flex-direction: row; overflow-x: auto; }
+  .section-body.hidden { display: flex !important; }
+
+  .tag-btn {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 8px;
+    min-width: 52px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .tag-btn:hover { border-left: none; border-bottom-color: var(--gold); }
+  .tag-btn .code { display: none; }
+  .tag-btn .wrap-hint { display: none !important; }
+  .tag-btn .icon { font-size: 16px; }
+  .tag-btn .label { font-size: 10px; }
+
+  /* Middle: editor full width */
+  .panel-mid {
+    height: auto;
+    min-height: 260px;
+  }
+  .format-toolbar { gap: 2px; padding: 4px 6px; }
+  .fmt-btn { padding: 3px 7px; font-size: 11px; }
+  textarea#editor {
+    min-height: 200px;
+    height: 200px;
+    flex: none;
+    overflow-y: auto;
+  }
+
+  /* Preview: collapsible on mobile */
+  .panel-right { border-top: 1px solid var(--border); }
+  #preview { padding: 12px 14px; font-size: 13px; }
+
+  /* Modal */
+  .modal { width: 95vw; padding: 16px; }
+}
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo">✦ 流金編輯器</div>
-  <div class="subtitle" data-i18n="subtitle">G-Years 論壇 BBCode 組合器</div>
+
   <div class="header-actions">
     <div class="hint-badge" data-i18n="selHint">💡 <b>選取文字</b>後按功能鍵可包裹標籤</div>
     <button class="btn btn-ghost" onclick="toggleLang()" id="langBtn">🌐 EN</button>
-    <button class="btn btn-ghost" onclick="undoAction()" title="復原 Ctrl+Z">↩ <span data-i18n="undo">復原</span></button>
     <button class="btn btn-ghost" onclick="saveFile()" title="另存新檔">💾 <span data-i18n="save">另存新檔</span></button>
     <button class="btn btn-gold" onclick="copyCode()">📋 <span data-i18n="copyAll">複製全部</span></button>
   </div>
@@ -200,6 +282,9 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 
   <!-- 格式工具列 -->
   <div class="format-toolbar">
+    <button class="fmt-btn" onclick="undoAction()" title="復原 Ctrl+Z">↩</button>
+    <button class="fmt-btn" onclick="redoAction()" title="取消復原 Ctrl+Y">↪</button>
+    <div class="fmt-sep"></div>
     <button class="fmt-btn" onclick="wrapFmt('b')" title="粗體"><b>B</b></button>
     <button class="fmt-btn" onclick="wrapFmt('i')" title="斜體"><i>I</i></button>
     <button class="fmt-btn" onclick="wrapFmt('u')" title="底線"><u>U</u></button>
@@ -209,7 +294,13 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
     <button class="fmt-btn" onclick="openColorModal('color')" title="字體顏色">A<span style="color:#f0b429;">■</span></button>
     <button class="fmt-btn" onclick="openColorModal('backcolor')" title="背景顏色">A<span style="background:#f0b429;color:#000;padding:0 2px;">bg</span></button>
     <div class="fmt-sep"></div>
+    <button class="fmt-btn" onclick="wrapFmt('align','left')" title="左對齊">⬅</button>
     <button class="fmt-btn" onclick="wrapFmt('align','center')" title="置中">≡</button>
+    <button class="fmt-btn" onclick="wrapFmt('align','right')" title="右對齊">➡</button>
+    <div class="fmt-sep"></div>
+    <button class="fmt-btn" onclick="insertAtCursor('[hr]
+')" title="水平分隔線">—</button>
+    <button class="fmt-btn" onclick="wrapFmt('code')" title="程式碼（原樣顯示）">&lt;/&gt;</button>
     <button class="fmt-btn" onclick="wrapFmt('url')" title="超連結">🔗</button>
   </div>
 
@@ -259,8 +350,8 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 ═══════════════════════════════════════════ */
 let lang = 'zh';
 const i18n = {
-  zh:{subtitle:'G-Years 論壇 BBCode 組合器',selHint:'💡 <b>選取文字</b>後按功能鍵可包裹標籤',undo:'復原',save:'另存新檔',copyAll:'複製全部',editor:'✏️ 編輯器',clear:'清空',selActive:'已選取文字 — 點左側標籤可包裹',preview:'👁 論壇預覽',previewHint:'← 從左側選擇標籤開始',refresh:'重新預覽',cancel:'取消',insert:'插入',charUnit:'字元',zhUnit:'中文：',insert_ok:'✅ 已插入！',copied:'✅ 已複製到剪貼簿！',saved:'✅ 已儲存為文字檔！',cleared:'已清空',confirmClear:'確定要清空編輯器嗎？'},
-  en:{subtitle:'G-Years Forum BBCode Composer',selHint:'💡 <b>Select text</b> then click a tag to wrap',undo:'Undo',save:'Save As',copyAll:'Copy All',editor:'✏️ Editor',clear:'Clear',selActive:'Text selected — click a tag to wrap',preview:'👁 Preview',previewHint:'← Select a tag from the left',refresh:'Refresh',cancel:'Cancel',insert:'Insert',charUnit:' chars',zhUnit:'CJK: ',insert_ok:'✅ Inserted!',copied:'✅ Copied to clipboard!',saved:'✅ Saved as text file!',cleared:'Cleared',confirmClear:'Clear the editor?'}
+  zh:{subtitle:'',selHint:'💡 <b>選取文字</b>後按功能鍵可包裹標籤',undo:'復原',save:'另存新檔',copyAll:'複製全部',editor:'✏️ 編輯器',clear:'清空',selActive:'已選取文字 — 點左側標籤可包裹',preview:'👁 論壇預覽',previewHint:'← 從左側選擇標籤開始',refresh:'重新預覽',cancel:'取消',insert:'插入',charUnit:'字元',zhUnit:'中文：',insert_ok:'✅ 已插入！',copied:'✅ 已複製到剪貼簿！',saved:'✅ 已儲存為文字檔！',cleared:'已清空',confirmClear:'確定要清空編輯器嗎？'},
+  en:{subtitle:'',selHint:'💡 <b>Select text</b> then click a tag to wrap',undo:'Undo',save:'Save As',copyAll:'Copy All',editor:'✏️ Editor',clear:'Clear',selActive:'Text selected — click a tag to wrap',preview:'👁 Preview',previewHint:'← Select a tag from the left',refresh:'Refresh',cancel:'Cancel',insert:'Insert',charUnit:' chars',zhUnit:'CJK: ',insert_ok:'✅ Inserted!',copied:'✅ Copied to clipboard!',saved:'✅ Saved as text file!',cleared:'Cleared',confirmClear:'Clear the editor?'}
 };
 function t(k){return i18n[lang][k]||k;}
 function toggleLang(){lang=lang==='zh'?'en':'zh';document.getElementById('langBtn').textContent=lang==='zh'?'🌐 EN':'🌐 中文';document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){el.placeholder=t(k)||el.placeholder;}else{el.innerHTML=i18n[lang][k]||el.innerHTML;}});buildLeftPanel();updatePreview();}
@@ -273,7 +364,11 @@ let undoPtr=-1;
 const MAX_UNDO=100;
 function pushUndo(val){if(undoPtr<undoStack.length-1)undoStack=undoStack.slice(0,undoPtr+1);undoStack.push(val);if(undoStack.length>MAX_UNDO)undoStack.shift();undoPtr=undoStack.length-1;}
 function undoAction(){if(undoPtr>0){undoPtr--;editor.value=undoStack[undoPtr];updatePreview();updateStats();}else if(undoPtr===0){editor.value='';updatePreview();updateStats();}}
-function handleKeyDown(e){if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undoAction();}}
+function redoAction(){if(undoPtr<undoStack.length-1){undoPtr++;editor.value=undoStack[undoPtr];updatePreview();updateStats();}}
+function handleKeyDown(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undoAction();}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();redoAction();}
+}
 let undoTimer;
 function onEditorInput(){
   clearTimeout(undoTimer);
@@ -319,22 +414,27 @@ function s2tConvert(){const ta=document.getElementById('editor');const pos=ta.se
 /* ═══════════════════════════════════════════
    GALLERY
 ═══════════════════════════════════════════ */
+// Gallery persisted in localStorage
 let gallery=[];
-function addToGallery(url,type='img'){if(gallery.find(g=>g.url===url))return;gallery.unshift({url,type,ts:Date.now()});if(gallery.length>30)gallery=gallery.slice(0,30);}
+try{const saved=localStorage.getItem('liujin_gallery');if(saved)gallery=JSON.parse(saved);}catch(e){}
+function saveGallery(){try{localStorage.setItem('liujin_gallery',JSON.stringify(gallery.slice(0,50)));}catch(e){}}
+function addToGallery(url,type='img'){if(gallery.find(g=>g.url===url))return;gallery.unshift({url,type,ts:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);saveGallery();}
 function renderGallery(container){
   container.innerHTML='';
   if(!gallery.length){container.innerHTML='<div class="gallery-empty">尚無已儲存的圖片/影片連結</div>';return;}
   gallery.forEach((g,i)=>{
     const d=document.createElement('div');
     d.className='gallery-item';
-    const delBtn=`<button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);renderGallery(this.closest('.gallery-grid'))">✕</button>`;
+    const delBtn=`<button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);saveGallery();renderGallery(this.closest('.gallery-grid'))">✕</button>`;
     if(g.type==='img'){
       d.innerHTML=`<img src="${g.url}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%25%22 height=%22100%25%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2212%22 fill=%22%23888%22 text-anchor=%22middle%22>No preview</text></svg>'">${delBtn}`;
       d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
     } else if(g.type==='vid'){
-      d.innerHTML=`<video src="${g.url}" style="width:100%;height:100%;object-fit:cover;" muted preload="metadata"></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;pointer-events:none;">▶</div>${delBtn}`;
       d.style.position='relative';
-      d.onclick=()=>{insertAtCursor(`[xmp4]${g.url}[/xmp4]\n`);closeModal();};
+      const vidIdx=i;
+      d.innerHTML=`<canvas id="galvc${vidIdx}" style="width:100%;height:100%;display:block;background:#1a1a1a;"></canvas><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;pointer-events:none;color:#fff;">▶</div>${delBtn}`;
+      (function(url,idx){setTimeout(()=>{const cv=document.getElementById('galvc'+idx);if(!cv)return;const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.addEventListener('loadeddata',()=>{v.currentTime=0.5;});v.addEventListener('seeked',()=>{cv.width=80;cv.height=80;const ctx=cv.getContext('2d');ctx.drawImage(v,0,0,80,80);v.remove();});v.load();},120);})(g.url,i);
+      d.onclick=()=>{insertAtCursor(`[xmp4]${g.url}[/xmp4]\n`);closeModal()};
     } else if(g.type==='yt'){
       d.innerHTML=`<div style="width:100%;height:100%;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;"><span style="font-size:20px;">▶️</span><span style="font-size:9px;color:#aaa;word-break:break-all;padding:2px 4px;text-align:center;">${g.url}</span></div>${delBtn}`;
       d.onclick=()=>{insertAtCursor(`[xyoutube]${g.url}[/xyoutube]\n`);closeModal();};
@@ -374,7 +474,26 @@ function updateStats(){const v=editor.value;document.getElementById('charCount')
 /* ═══════════════════════════════════════════
    FILE OPS
 ═══════════════════════════════════════════ */
-function saveFile(){const blob=new Blob([editor.value],{type:'text/plain;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='liujin-bbcode.txt';a.click();showToast(t('saved'));}
+async function saveFile(){
+  const content_=editor.value;
+  if(window.showSaveFilePicker){
+    try{
+      const fh=await window.showSaveFilePicker({
+        suggestedName:'liujin-bbcode.txt',
+        types:[{description:'文字檔',accept:{'text/plain':['.txt']}}]
+      });
+      const w=await fh.createWritable();
+      await w.write(content_);
+      await w.close();
+      showToast(t('saved'));
+      return;
+    }catch(e){if(e.name==='AbortError')return;}
+  }
+  // fallback
+  const blob=new Blob([content_],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='liujin-bbcode.txt';a.click();
+  showToast(t('saved'));
+}
 function copyCode(){if(!editor.value.trim())return;navigator.clipboard.writeText(editor.value).then(()=>showToast(t('copied')));}
 function clearEditor(){if(editor.value&&confirm(t('confirmClear'))){pushUndo(editor.value);editor.value='';updatePreview();updateStats();savedSel={start:0,end:0,text:''}; document.body.classList.remove('has-selection');document.getElementById('selectionBar').classList.remove('visible');}}
 function showToast(msg){const t_=document.getElementById('toast');t_.textContent=msg;t_.classList.add('show');setTimeout(()=>t_.classList.remove('show'),2500);}
@@ -448,6 +567,7 @@ function buildLeftPanel(){
       {tag:'xgreen',icon:'✅',label:lang==='zh'?'成功訊息（綠）':'Success (Green)',code:'xgreen',wrap:true},
       {tag:'xred',icon:'🚫',label:lang==='zh'?'禁止事項（紅）':'Forbidden (Red)',code:'xred',wrap:true},
       {tag:'xinfo',icon:'ℹ️',label:lang==='zh'?'資訊框（藍）':'Info Box (Blue)',code:'xinfo',wrap:true},
+      {tag:'xgold',icon:'🏅',label:lang==='zh'?'金色標題條':'Gold Title',code:'xgold',wrap:true},
       {tag:'xglass',icon:'🪟',label:lang==='zh'?'玻璃風格':'Glass Style',code:'xglass',wrap:true},
       {tag:'xcard',icon:'🃏',label:lang==='zh'?'卡片':'Card',code:'xcard',modal:true},
     ]},
@@ -462,7 +582,7 @@ function buildLeftPanel(){
     ]},
     {key:'media',title:lang==='zh'?'🎬 多媒體':'🎬 Media',tags:[
       {tag:'xyoutube',icon:'▶️',label:'YouTube',code:'xyoutube',modal:true},
-      {tag:'xsyoutube',icon:'📱',label:'YouTube Shorts',code:'xsyoutube',modal:true},
+      {tag:'xsyoutube',icon:'📱',label:lang==='zh'?'YouTube直立影片':'YouTube Vertical',code:'xsyoutube',modal:true},
       {tag:'xmp4',icon:'🎥',label:'MP4 影片',code:'xmp4',modal:true},
       {tag:'xvmp4',icon:'📹',label:lang==='zh'?'直立影片 MP4':'Vertical MP4',code:'xvmp4',modal:true},
       {tag:'xtiktok',icon:'🎶',label:'TikTok',code:'xtiktok',modal:true},
@@ -527,7 +647,7 @@ function openModal(tag){
     xnote:'📌 重點框',xwarn:'⚠️ 警告框',xblue:'🔵 技術提示',xgreen:'✅ 成功訊息',xred:'🚫 禁止事項',xinfo:'ℹ️ 資訊框',xglass:'🪟 玻璃風格框',
     xcard:'🃏 卡片',quote:'「」引用框 type2（框格）',xquote:'｜引用框 type1（斜體）',
     xtag:'🔖 標籤',xrate:'⭐ 評分',xbtn:'🔘 按鈕連結',
-    xyoutube:'▶️ YouTube 長影片',xsyoutube:'📱 YouTube Shorts',xmp4:'🎥 MP4 影片',xvmp4:'📹 直立 MP4',xmp3:'🎵 MP3 音樂',xtiktok:'🎶 TikTok',xsound:'🔊 SoundCloud',xsendvid:'📺 Sendvid 影片',xmap:'🗺 地圖座標（xmap）',xmaplink:'📍 地點名稱（xmaplink）',
+    xyoutube:'▶️ YouTube 長影片',xsyoutube:'📱 YouTube直立影片',xmp4:'🎥 MP4 影片',xvmp4:'📹 直立 MP4',xmp3:'🎵 MP3 音樂',xtiktok:'🎶 TikTok',xsound:'🔊 SoundCloud',xsendvid:'📺 Sendvid 影片',xmap:'🗺 地圖座標（xmap）',xmaplink:'📍 地點名稱（xmaplink）',
     ximg:'🖼 插入圖片',postimages:'📤 Postimages 半自動上傳',catbox:'🐱 貓盒 Catbox 上傳',gallery:'🗂 圖庫',
     dialog:'🗨 對話泡泡',xtable:'📋 表格',hide:'🔐 加密內容',
     size:'A↕ 文字大小',colorpicker:'🎨 顏色選擇',
@@ -541,7 +661,8 @@ function openModal(tag){
     case 'xgold':case 'xcenter':case 'xgban':case 'xnote':case 'xwarn':case 'xblue':case 'xgreen':case 'xred':case 'xinfo':case 'xglass':
       html=`<label>內容</label><input id="f1" value="${esc(selVal)}" placeholder="輸入內容">`;break;
     case 'xcard':
-      html=`<label>卡片標題</label><input id="f1" placeholder="例：推薦作品"><label>卡片內容</label><textarea id="f2">${esc(selVal)}</textarea>`;break;
+      html=`<label>卡片標題</label><input id="f1" placeholder="例：推薦作品"><label>卡片內容</label><textarea id="f2">${esc(selVal)}</textarea>`
+;break;
     case 'quote':case 'xquote':
       html=`<label>引用內容</label><textarea id="f1">${esc(selVal)}</textarea>`;break;
     case 'xtag':
@@ -595,8 +716,7 @@ function openModal(tag){
     case 'catbox':
       html=`<div class="postimg-steps">
         <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">開啟貓盒上傳</div><div class="step-desc">點下方按鈕在新分頁開啟 Catbox，上傳你的檔案。</div><button class="postimg-open-btn" onclick="window.open('https://catbox.moe/','_blank')">🐱 開啟 Catbox</button></div></div>
-        <div class="postimg-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">複製上傳後的連結</div><div class="step-desc">上傳完成後複製 <b>files.catbox.moe</b> 開頭的連結網址。</div></div></div>
-        <div class="postimg-step"><div class="step-num">3</div><div class="step-body"><div class="step-title">選擇類型並貼上連結</div>
+        <div class="postimg-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">選擇類型並貼上連結</div>
         <div style="display:flex;gap:8px;margin:8px 0;">
           <button id="cbTypeImg" class="btn btn-gold" style="flex:1;font-size:12px;" onclick="setCatboxType('img')">🖼 圖片</button>
           <button id="cbTypeVid" class="btn btn-ghost" style="flex:1;font-size:12px;" onclick="setCatboxType('vid')">🎥 影片</button>
@@ -610,7 +730,7 @@ function openModal(tag){
       setTimeout(()=>{ setCatboxType('img'); },30);
       break;
     case 'gallery':
-      html=`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;">點選圖片可插入 BBCode，上傳圖片後會自動儲存於此。</div><div class="gallery-grid" id="galGrid"></div>`;
+      html=`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;">點選圖片/影片可插入 BBCode。圖庫會儲存在此裝置，重新開啟仍可使用。</div><div class="gallery-grid" id="galGrid"></div>`;
       document.getElementById('modalOK').style.display='none';break;
     case 'dialog':
       html=`<div style="font-size:11px;color:var(--text2);margin-bottom:10px;">點「+ 新增對話」加入訊息，可選左側或右側，可自由刪除。</div>
@@ -623,15 +743,7 @@ function openModal(tag){
       break;
     case 'xtable':
       html=`<label>表格標題</label><input id="tblHead" placeholder="例：咖啡館資訊">
-      <div style="margin-top:10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:11px;color:var(--text2);">欄位數：</span>
-        <div style="display:flex;gap:4px;">
-          <button class="tbl-del-btn" onclick="changeColCount(-1)" style="padding:2px 8px;">－</button>
-          <span id="colCountDisplay" style="min-width:20px;text-align:center;font-size:12px;padding:2px 4px;">2</span>
-          <button class="tbl-del-btn" onclick="changeColCount(1)" style="padding:2px 8px;color:var(--gold);">＋</button>
-        </div>
-      </div>
-      <div id="tblHeaderRow" style="display:grid;gap:4px;margin-bottom:6px;"></div>
+      <div id="tblHeaderRow" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:8px 0 4px;"></div>
       <div class="tbl-builder" id="tblRows"></div>
       <button class="tbl-add-btn" onclick="addTableRow()">+ 新增一列</button>`;
       setTimeout(()=>{initTable(2);},30);
@@ -816,6 +928,7 @@ function confirmInsert(){
     case 'xgold':case 'xcenter':case 'xgban':case 'xnote':case 'xwarn':case 'xblue':case 'xgreen':case 'xred':case 'xinfo':case 'xglass':case 'xtag':
       code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
     case 'xcard': code=`[xcard=${g('f1')}]${g('f2')}[/xcard]\n`;break;
+
     case 'quote':case 'xquote': code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
     case 'xrate': code=`[xrate]${g('f1')}[/xrate]\n`;break;
     case 'xbtn': code=`[xbtn=${g('f1')}]${g('f2')}[/xbtn]\n`;break;
@@ -909,7 +1022,11 @@ function updatePreview(){
   h=h.replace(/\[size=(\d+)\]([\s\S]*?)\[\/size\]/g,(_,s,c)=>`<span style="font-size:${8+parseInt(s)*2}px">${c}</span>`);
   h=h.replace(/\[color=(#[0-9a-fA-F]{3,8}|[a-z]+)\]([\s\S]*?)\[\/color\]/g,'<span style="color:$1">$2</span>');
   h=h.replace(/\[backcolor=(#[0-9a-fA-F]{3,8}|[a-z]+)\]([\s\S]*?)\[\/backcolor\]/g,'<span style="background:$1;padding:0 2px;">$2</span>');
+  h=h.replace(/\[align=left\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:left">$1</div>');
   h=h.replace(/\[align=center\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:center">$1</div>');
+  h=h.replace(/\[align=right\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:right">$1</div>');
+  h=h.replace(/\[hr\]/g,'<hr style="border:none;border-top:1px solid #ccc;margin:10px 0;">');
+  h=h.replace(/\[code\]([\s\S]*?)\[\/code\]/g,'<pre style="background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:10px;font-family:monospace;font-size:12px;white-space:pre-wrap;overflow-x:auto;">$1</pre>');
 
   // [url=LINK][img]LINK[/img][/url] — Postimages 論壇外連，最優先
   h=h.replace(/\[url=([^\]]+)\]\[img\]([\s\S]*?)\[\/img\]\[\/url\]/g,
@@ -944,7 +1061,10 @@ function updatePreview(){
     ['xmp4',c=>`<video class="forum-img" controls style="max-width:100%;border-radius:6px;margin:4px 0;"><source src="${c}" type="video/mp4">MP4: ${c}</video>`],
     ['xvmp4',c=>`<video class="forum-img" controls style="max-width:320px;border-radius:6px;margin:4px 0;"><source src="${c}" type="video/mp4">MP4: ${c}</video>`],
     ['xmp3',c=>`<audio controls style="width:100%;margin:6px 0;"><source src="${c}" type="audio/mpeg">MP3: ${c}</audio>`],
-    ['xsound',c=>`<div class="media-ph">🔊 SoundCloud：<a href="${c}" target="_blank" style="color:#3b82f6">${c}</a></div>`],
+    ['xsound',c=>{
+      const encoded=encodeURIComponent(c.trim());
+      return `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" loading="lazy" style="border-radius:8px;margin:6px 0;" src="https://w.soundcloud.com/player/?url=${encoded}&color=%23f0b429&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe>`;
+    }],
     ['xmaplink',c=>`<div style="margin:6px 0"><div class="media-ph" style="margin-bottom:4px;">📍 <a href="https://www.google.com/maps/search/${encodeURIComponent(c)}" target="_blank" style="color:#3b82f6">🗺 在 Google Maps 搜尋「${c}」</a></div><iframe src="https://maps.google.com/maps?q=${encodeURIComponent(c)}&output=embed&z=15" style="width:100%;height:200px;border:none;border-radius:8px;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`],
     ['xmap',c=>`<div style="margin:6px 0"><div class="media-ph" style="margin-bottom:4px;">🗺 <a href="https://www.google.com/maps?q=${encodeURIComponent(c)}" target="_blank" style="color:#3b82f6">在 Google Maps 查看座標 ${c}</a></div><iframe src="https://maps.google.com/maps?q=${encodeURIComponent(c)}&output=embed&z=15" style="width:100%;height:200px;border:none;border-radius:8px;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`],
   ];
@@ -956,11 +1076,17 @@ function updatePreview(){
   h=h.replace(/\[xyoutube\]([\s\S]*?)\[\/xyoutube\]/g,
     (_,id)=>`<iframe class="yt-embed" src="https://www.youtube.com/embed/${id.trim()}" allowfullscreen loading="lazy"></iframe>`);
   h=h.replace(/\[xsyoutube\]([\s\S]*?)\[\/xsyoutube\]/g,
-    (_,id)=>`<iframe style="width:100%;aspect-ratio:9/16;max-height:480px;border-radius:6px;border:none;margin:6px 0;display:block;" src="https://www.youtube.com/embed/${id.trim()}" allowfullscreen loading="lazy"></iframe>`);
+    (_,id)=>`<iframe style="width:280px;aspect-ratio:9/16;max-height:500px;border-radius:10px;border:none;margin:6px 0;display:block;" src="https://www.youtube.com/embed/${id.trim()}" allowfullscreen loading="lazy"></iframe>`);
 
-  // TikTok (no embed API, show link)
+  // TikTok: vertical iframe embed
   h=h.replace(/\[xtiktok\]([\s\S]*?)\[\/xtiktok\]/g,
-    (_,id)=>`<div class="media-ph">🎶 TikTok：<a href="https://www.tiktok.com/video/${id.trim()}" target="_blank" style="color:#3b82f6">影片 ID: ${id.trim()}</a></div>`);
+    (_,id)=>{
+      const tid=id.trim();
+      return `<div style="display:flex;flex-direction:column;align-items:flex-start;margin:6px 0;">
+        <iframe src="https://www.tiktok.com/embed/v2/${tid}" style="width:280px;height:500px;border-radius:10px;border:none;display:block;" allowfullscreen loading="lazy"></iframe>
+        <div class="media-ph" style="margin-top:4px;font-size:11px;">🎶 TikTok ID: <a href="https://www.tiktok.com/video/${tid}" target="_blank" style="color:#3b82f6">${tid}</a></div>
+      </div>`;
+    });
 
   // Sendvid embed
   h=h.replace(/\[xsendvid\]([\s\S]*?)\[\/xsendvid\]/g,
@@ -973,9 +1099,7 @@ function updatePreview(){
   h=h.replace(/\[xbtn=([^\]]+)\]([\s\S]*?)\[\/xbtn\]/g,
     (_,url,text)=>`<a class="xbtn-link" href="${url}" target="_blank">${text.trim()}</a>`);
 
-  // dialog
-  h=h.replace(/\[xleft\]([\s\S]*?)\[\/xleft\]\s*\[xright\]([\s\S]*?)\[\/xright\]/g,
-    (_,l,r)=>`<div class="dialog-container"><div class="xleft-bubble"><span>${l.trim()}</span></div><div class="xright-bubble"><span>${r.trim()}</span></div></div>`);
+  // dialog — handle each tag independently (supports consecutive same-side bubbles)
   h=h.replace(/\[xleft\]([\s\S]*?)\[\/xleft\]/g,(_,c)=>`<div class="xleft-bubble"><span>${c.trim()}</span></div>`);
   h=h.replace(/\[xright\]([\s\S]*?)\[\/xright\]/g,(_,c)=>`<div class="xright-bubble"><span>${c.trim()}</span></div>`);
 
