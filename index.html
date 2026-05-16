@@ -55,7 +55,7 @@ body.has-selection .tag-btn.wrappable:hover{border-left-color:var(--gold);backgr
 .panel-header h3{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
 
 /* 格式工具列 */
-.format-toolbar{display:flex;flex-wrap:wrap;gap:3px;padding:6px 10px;background:var(--surface2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.format-toolbar{display:flex;flex-wrap:wrap;gap:3px;padding:6px 10px;background:var(--surface2);border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:10;}
 .fmt-btn{padding:3px 9px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
 .fmt-btn:hover{background:var(--surface2);border-color:var(--gold);color:var(--gold);}
 .fmt-btn b{font-weight:700;}
@@ -66,7 +66,7 @@ body.has-selection .tag-btn.wrappable:hover{border-left-color:var(--gold);backgr
 #selectionBar{display:none;padding:5px 14px;background:rgba(240,180,41,.1);border-bottom:1px solid rgba(240,180,41,.25);font-size:11px;color:var(--gold);flex-shrink:0;}
 #selectionBar.visible{display:flex;align-items:center;gap:6px;}
 
-textarea#editor{flex:1;background:var(--bg);border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;padding:14px;resize:none;caret-color:var(--gold);}
+textarea#editor{flex:1;background:var(--bg);border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;padding:14px;resize:none;caret-color:var(--gold);overflow-y:auto;min-height:0;}
 textarea#editor::selection{background:rgba(240,180,41,.2);}
 
 .editor-footer{padding:6px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;flex-wrap:wrap;gap:4px;}
@@ -275,7 +275,39 @@ function pushUndo(val){if(undoPtr<undoStack.length-1)undoStack=undoStack.slice(0
 function undoAction(){if(undoPtr>0){undoPtr--;editor.value=undoStack[undoPtr];updatePreview();updateStats();}else if(undoPtr===0){editor.value='';updatePreview();updateStats();}}
 function handleKeyDown(e){if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undoAction();}}
 let undoTimer;
-function onEditorInput(){clearTimeout(undoTimer);undoTimer=setTimeout(()=>pushUndo(editor.value),400);s2tConvert();updatePreview();updateStats();}
+function onEditorInput(){
+  clearTimeout(undoTimer);
+  undoTimer=setTimeout(()=>pushUndo(editor.value),400);
+  s2tConvert();
+  // Auto-detect media links pasted into editor and save to gallery
+  const val=editor.value;
+  let m;
+  // Postimages forum link [url=...][img]...[/img][/url]
+  const imgRe=/\[url=([^\]]+)\]\[img\]([^\[]+)\[\/img\]\[\/url\]/g;
+  while((m=imgRe.exec(val))!==null){addToGallery(m[2].trim(),'img');}
+  // [ximg] and [img]
+  const ximgRe=/\[ximg\]([^\[]+)\[\/ximg\]/g;
+  while((m=ximgRe.exec(val))!==null){addToGallery(m[1].trim(),'img');}
+  const imgRe2=/\[img\]([^\[]+)\[\/img\]/g;
+  while((m=imgRe2.exec(val))!==null){addToGallery(m[1].trim(),'img');}
+  // Video tags → save as 'vid' type
+  const vidTags=['xmp4','xvmp4','xsendvid'];
+  vidTags.forEach(tag=>{
+    const re=new RegExp('\\['+tag+'\\]([^\\[]+)\\[\\/'+ tag+'\\]','g');
+    while((m=re.exec(val))!==null){addToGallery(m[1].trim(),'vid');}
+  });
+  // YouTube/TikTok → save as 'yt' type
+  ['xyoutube','xsyoutube'].forEach(tag=>{
+    const re=new RegExp('\\['+tag+'\\]([^\\[]+)\\[\\/'+ tag+'\\]','g');
+    while((m=re.exec(val))!==null){addToGallery(m[1].trim(),'yt');}
+  });
+  ['xtiktok'].forEach(tag=>{
+    const re=new RegExp('\\['+tag+'\\]([^\\[]+)\\[\\/'+ tag+'\\]','g');
+    while((m=re.exec(val))!==null){addToGallery(m[1].trim(),'tt');}
+  });
+  updatePreview();
+  updateStats();
+}
 
 /* ═══════════════════════════════════════════
    S2T (Simplified → Traditional)
@@ -289,7 +321,34 @@ function s2tConvert(){const ta=document.getElementById('editor');const pos=ta.se
 ═══════════════════════════════════════════ */
 let gallery=[];
 function addToGallery(url,type='img'){if(gallery.find(g=>g.url===url))return;gallery.unshift({url,type,ts:Date.now()});if(gallery.length>30)gallery=gallery.slice(0,30);}
-function renderGallery(container){container.innerHTML='';if(!gallery.length){container.innerHTML='<div class="gallery-empty">尚無已上傳的圖片/影片連結</div>';return;}gallery.forEach((g,i)=>{const d=document.createElement('div');d.className='gallery-item';if(g.type==='img'){d.innerHTML=`<img src="${g.url}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2212%22 fill=%22%23888%22 text-anchor=%22middle%22>No preview</text></svg>'"><button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);renderGallery(this.closest('.gallery-grid'))">✕</button>`;}else{d.innerHTML=`<div style="width:100%;height:100%;background:#222;display:flex;align-items:center;justify-content:center;font-size:20px;">🎬</div><button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);renderGallery(this.closest('.gallery-grid'))">✕</button>`;}d.title=g.url;d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};container.appendChild(d);});}
+function renderGallery(container){
+  container.innerHTML='';
+  if(!gallery.length){container.innerHTML='<div class="gallery-empty">尚無已儲存的圖片/影片連結</div>';return;}
+  gallery.forEach((g,i)=>{
+    const d=document.createElement('div');
+    d.className='gallery-item';
+    const delBtn=`<button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);renderGallery(this.closest('.gallery-grid'))">✕</button>`;
+    if(g.type==='img'){
+      d.innerHTML=`<img src="${g.url}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%25%22 height=%22100%25%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2212%22 fill=%22%23888%22 text-anchor=%22middle%22>No preview</text></svg>'">${delBtn}`;
+      d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
+    } else if(g.type==='vid'){
+      d.innerHTML=`<video src="${g.url}" style="width:100%;height:100%;object-fit:cover;" muted preload="metadata"></video><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;pointer-events:none;">▶</div>${delBtn}`;
+      d.style.position='relative';
+      d.onclick=()=>{insertAtCursor(`[xmp4]${g.url}[/xmp4]\n`);closeModal();};
+    } else if(g.type==='yt'){
+      d.innerHTML=`<div style="width:100%;height:100%;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;"><span style="font-size:20px;">▶️</span><span style="font-size:9px;color:#aaa;word-break:break-all;padding:2px 4px;text-align:center;">${g.url}</span></div>${delBtn}`;
+      d.onclick=()=>{insertAtCursor(`[xyoutube]${g.url}[/xyoutube]\n`);closeModal();};
+    } else if(g.type==='tt'){
+      d.innerHTML=`<div style="width:100%;height:100%;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;"><span style="font-size:20px;">🎶</span><span style="font-size:9px;color:#aaa;padding:2px 4px;">${g.url}</span></div>${delBtn}`;
+      d.onclick=()=>{insertAtCursor(`[xtiktok]${g.url}[/xtiktok]\n`);closeModal();};
+    } else {
+      d.innerHTML=`<div style="width:100%;height:100%;background:#222;display:flex;align-items:center;justify-content:center;font-size:20px;">📎</div>${delBtn}`;
+      d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
+    }
+    d.title=g.url;
+    container.appendChild(d);
+  });
+}
 
 /* ═══════════════════════════════════════════
    SELECTION
@@ -375,15 +434,7 @@ function buildLeftPanel(){
   const panel=document.getElementById('leftPanel');
   panel.innerHTML='';
   const sections=[
-    {key:'format',title:lang==='zh'?'🖋 文字格式':'🖋 Format',tags:[
-      {tag:'b',icon:'B',label:lang==='zh'?'粗體':'Bold',code:'b',wrap:true},
-      {tag:'i',icon:'I',label:lang==='zh'?'斜體':'Italic',code:'i',wrap:true},
-      {tag:'u',icon:'U',label:lang==='zh'?'底線':'Underline',code:'u',wrap:true},
-      {tag:'strike',icon:'S',label:lang==='zh'?'刪除線':'Strikethrough',code:'strike',wrap:true},
-      {tag:'size',icon:'A↕',label:lang==='zh'?'文字大小':'Font Size',code:'size',modal:true},
-      {tag:'color',icon:'A🎨',label:lang==='zh'?'字體顏色':'Font Color',code:'color',modal:true},
-      {tag:'backcolor',icon:'A◼',label:lang==='zh'?'背景顏色':'Bg Color',code:'backcolor',modal:true},
-    ]},
+
     {key:'layout',title:lang==='zh'?'📐 基本排版':'📐 Layout',tags:[
       {tag:'xhr',icon:'➖',label:lang==='zh'?'金色分隔線':'Gold Divider',code:'xhr',simple:true},
       {tag:'xgold',icon:'🏷',label:lang==='zh'?'章節標題':'Section Title',code:'xgold',wrap:true},
@@ -401,11 +452,11 @@ function buildLeftPanel(){
       {tag:'xcard',icon:'🃏',label:lang==='zh'?'卡片':'Card',code:'xcard',modal:true},
     ]},
     {key:'quote',title:lang==='zh'?'💬 引用':'💬 Quote',tags:[
-      {tag:'xquote',icon:'｜',label:lang==='zh'?'引用框 type1 (斜體)':'Quote type1 (italic)',code:'xquote',wrap:true},
-      {tag:'quote',icon:'「」',label:lang==='zh'?'引用框 type2 (框格)':'Quote type2 (box)',code:'quote',wrap:true},
+      {tag:'xquote',icon:'｜',label:lang==='zh'?'引用框 type1':'Quote type1',code:'xquote',wrap:true},
+      {tag:'quote',icon:'「」',label:lang==='zh'?'引用框 type2':'Quote type2',code:'quote',wrap:true},
     ]},
     {key:'badge',title:lang==='zh'?'🏷 標籤與評分':'🏷 Tags & Rating',tags:[
-      {tag:'xtag',icon:'🔖',label:lang==='zh'?'標籤 Pill':'Tag Pill',code:'xtag',wrap:true},
+      {tag:'xtag',icon:'🔖',label:lang==='zh'?'標籤':'Tag',code:'xtag',wrap:true},
       {tag:'xrate',icon:'⭐',label:lang==='zh'?'評分':'Rating',code:'xrate',modal:true},
       {tag:'xbtn',icon:'🔘',label:lang==='zh'?'按鈕連結':'Button Link',code:'xbtn',modal:true},
     ]},
@@ -424,6 +475,7 @@ function buildLeftPanel(){
     {key:'image',title:lang==='zh'?'🖼 圖片':'🖼 Images',tags:[
       {tag:'ximg',icon:'🖼',label:lang==='zh'?'插入圖片連結':'Insert Image URL',code:'ximg',modal:true},
       {tag:'postimages',icon:'📤',label:lang==='zh'?'Postimages 上傳':'Postimages Upload',code:'半自動',modal:true,gold:true},
+      {tag:'catbox',icon:'🐱',label:lang==='zh'?'貓盒 Catbox':'Catbox',code:'半自動',modal:true,gold:true},
       {tag:'gallery',icon:'🗂',label:lang==='zh'?'圖庫':'Gallery',code:'gallery',modal:true},
     ]},
     {key:'dialog',title:lang==='zh'?'💬 對話':'💬 Dialog',tags:[
@@ -476,7 +528,7 @@ function openModal(tag){
     xcard:'🃏 卡片',quote:'「」引用框 type2（框格）',xquote:'｜引用框 type1（斜體）',
     xtag:'🔖 標籤',xrate:'⭐ 評分',xbtn:'🔘 按鈕連結',
     xyoutube:'▶️ YouTube 長影片',xsyoutube:'📱 YouTube Shorts',xmp4:'🎥 MP4 影片',xvmp4:'📹 直立 MP4',xmp3:'🎵 MP3 音樂',xtiktok:'🎶 TikTok',xsound:'🔊 SoundCloud',xsendvid:'📺 Sendvid 影片',xmap:'🗺 地圖座標（xmap）',xmaplink:'📍 地點名稱（xmaplink）',
-    ximg:'🖼 插入圖片',postimages:'📤 Postimages 半自動上傳',gallery:'🗂 圖庫',
+    ximg:'🖼 插入圖片',postimages:'📤 Postimages 半自動上傳',catbox:'🐱 貓盒 Catbox 上傳',gallery:'🗂 圖庫',
     dialog:'🗨 對話泡泡',xtable:'📋 表格',hide:'🔐 加密內容',
     size:'A↕ 文字大小',colorpicker:'🎨 顏色選擇',
   };
@@ -540,17 +592,49 @@ function openModal(tag){
         </div></div></div>`;
       document.getElementById('modalOK').textContent='插入';
       break;
+    case 'catbox':
+      html=`<div class="postimg-steps">
+        <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">開啟貓盒上傳</div><div class="step-desc">點下方按鈕在新分頁開啟 Catbox，上傳你的檔案。</div><button class="postimg-open-btn" onclick="window.open('https://catbox.moe/','_blank')">🐱 開啟 Catbox</button></div></div>
+        <div class="postimg-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">複製上傳後的連結</div><div class="step-desc">上傳完成後複製 <b>files.catbox.moe</b> 開頭的連結網址。</div></div></div>
+        <div class="postimg-step"><div class="step-num">3</div><div class="step-body"><div class="step-title">選擇類型並貼上連結</div>
+        <div style="display:flex;gap:8px;margin:8px 0;">
+          <button id="cbTypeImg" class="btn btn-gold" style="flex:1;font-size:12px;" onclick="setCatboxType('img')">🖼 圖片</button>
+          <button id="cbTypeVid" class="btn btn-ghost" style="flex:1;font-size:12px;" onclick="setCatboxType('vid')">🎥 影片</button>
+        </div>
+        <label>貼上 Catbox 連結</label>
+        <input id="cbUrl" placeholder="https://files.catbox.moe/xxxxxx.jpg" oninput="prevCatbox()">
+        <div id="cbErr" style="font-size:11px;color:#ef4444;min-height:12px;margin-top:4px;"></div>
+        <div id="cbPrev" style="margin-top:6px;"></div>
+        </div></div></div>`;
+      document.getElementById('modalOK').textContent='插入';
+      setTimeout(()=>{ setCatboxType('img'); },30);
+      break;
     case 'gallery':
       html=`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;">點選圖片可插入 BBCode，上傳圖片後會自動儲存於此。</div><div class="gallery-grid" id="galGrid"></div>`;
       document.getElementById('modalOK').style.display='none';break;
     case 'dialog':
-      html=`<label>左側說的話（xleft）</label><input id="f1" placeholder="例：你到底什麼時候要把 Design 定好？">
-      <label>右側說的話（xright）</label><input id="f2" placeholder="例：再給我兩天，我想一下。">`;break;
+      html=`<div style="font-size:11px;color:var(--text2);margin-bottom:10px;">點「+ 新增對話」加入訊息，可選左側或右側，可自由刪除。</div>
+      <div id="dialogRows" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;padding-right:4px;"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="tbl-add-btn" style="flex:1;" onclick="addDialogRow('left')">＋ 左側（xleft）</button>
+        <button class="tbl-add-btn" style="flex:1;" onclick="addDialogRow('right')">＋ 右側（xright）</button>
+      </div>`;
+      setTimeout(()=>{addDialogRow('left');addDialogRow('right');},50);
+      break;
     case 'xtable':
       html=`<label>表格標題</label><input id="tblHead" placeholder="例：咖啡館資訊">
-      <div style="margin-top:10px;font-size:11px;color:var(--text2);margin-bottom:6px;">表格列 <span style="color:var(--text2);">（欄位名 | 內容）</span></div>
+      <div style="margin-top:10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--text2);">欄位數：</span>
+        <div style="display:flex;gap:4px;">
+          <button class="tbl-del-btn" onclick="changeColCount(-1)" style="padding:2px 8px;">－</button>
+          <span id="colCountDisplay" style="min-width:20px;text-align:center;font-size:12px;padding:2px 4px;">2</span>
+          <button class="tbl-del-btn" onclick="changeColCount(1)" style="padding:2px 8px;color:var(--gold);">＋</button>
+        </div>
+      </div>
+      <div id="tblHeaderRow" style="display:grid;gap:4px;margin-bottom:6px;"></div>
       <div class="tbl-builder" id="tblRows"></div>
       <button class="tbl-add-btn" onclick="addTableRow()">+ 新增一列</button>`;
+      setTimeout(()=>{initTable(2);},30);
       break;
     case 'hide':
       html=`<label>限制數值</label><input id="f1" placeholder="例：1000">
@@ -582,7 +666,7 @@ function openModal(tag){
   overlay.classList.add('active');
   setTimeout(()=>{
     if(tag==='gallery')renderGallery(document.getElementById('galGrid'));
-    if(tag==='xtable'){addTableRow();addTableRow();}
+    if(tag==='xtable'){initTable(2);}
     if(tag==='colorpicker'){document.getElementById('colorCustom').addEventListener('input',e=>{selectColor(e.target.value);});}
     const f=document.getElementById('f1')||document.getElementById('piUrl')||document.getElementById('tblHead');
     if(f)f.focus();
@@ -591,9 +675,72 @@ function openModal(tag){
 
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-/* table row builder */
+/* table builder */
 let tblRowCount=0;
-function addTableRow(){tblRowCount++;const container=document.getElementById('tblRows');const row=document.createElement('div');row.className='tbl-row';row.id='tr'+tblRowCount;row.innerHTML=`<input placeholder="欄位名" class="tbl-key"><input placeholder="內容"><button class="tbl-del-btn" onclick="this.closest('.tbl-row').remove()">✕</button>`;container.appendChild(row);}
+let tblColCount=2;
+function initTable(cols){
+  tblColCount=cols;
+  renderHeaderRow();
+  document.getElementById('tblRows').innerHTML='';
+  tblRowCount=0;
+  addTableRow();addTableRow();
+}
+function renderHeaderRow(){
+  const hr=document.getElementById('tblHeaderRow');
+  if(!hr)return;
+  hr.style.gridTemplateColumns=`repeat(${tblColCount},1fr) 28px`;
+  hr.innerHTML=Array.from({length:tblColCount},(_,i)=>`<input placeholder="標題${i+1}" class="tbl-header-cell" style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;outline:none;">`).join('')+'<span></span>';
+}
+function changeColCount(delta){
+  tblColCount=Math.max(1,Math.min(8,tblColCount+delta));
+  document.getElementById('colCountDisplay').textContent=tblColCount;
+  renderHeaderRow();
+  // re-render all existing rows with new col count
+  const rows=[...document.querySelectorAll('#tblRows .tbl-row')];
+  rows.forEach(r=>{
+    const existing=[...r.querySelectorAll('.tbl-cell')].map(i=>i.value);
+    r.style.gridTemplateColumns=`repeat(${tblColCount},1fr) 28px`;
+    const cells=r.querySelectorAll('.tbl-cell');
+    // add missing cols
+    const delBtn=r.querySelector('.tbl-del-btn');
+    while(r.querySelectorAll('.tbl-cell').length<tblColCount){
+      const inp=document.createElement('input');
+      inp.className='tbl-cell';inp.placeholder='內容';
+      inp.style.cssText='background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;outline:none;';
+      r.insertBefore(inp,delBtn);
+    }
+    // remove extra cols
+    while(r.querySelectorAll('.tbl-cell').length>tblColCount){
+      r.querySelectorAll('.tbl-cell')[r.querySelectorAll('.tbl-cell').length-1].remove();
+    }
+  });
+}
+function addTableRow(){
+  tblRowCount++;
+  const container=document.getElementById('tblRows');
+  const row=document.createElement('div');
+  row.className='tbl-row';
+  row.style.gridTemplateColumns=`repeat(${tblColCount},1fr) 28px`;
+  const cells=Array.from({length:tblColCount},()=>`<input class="tbl-cell" placeholder="內容" style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;outline:none;">`).join('');
+  row.innerHTML=cells+`<button class="tbl-del-btn" onclick="this.closest('.tbl-row').remove()">✕</button>`;
+  container.appendChild(row);
+}
+
+/* dialog row builder */
+let dialogRowCount=0;
+function addDialogRow(side){
+  dialogRowCount++;
+  const container=document.getElementById('dialogRows');
+  if(!container)return;
+  const row=document.createElement('div');
+  row.className='dialog-row';
+  row.dataset.side=side;
+  const isLeft=side==='left';
+  row.style.cssText='display:flex;align-items:center;gap:8px;';
+  row.innerHTML=`<span style="font-size:10px;font-weight:700;min-width:44px;color:${isLeft?'#60a5fa':'#4ade80'};text-align:center;">${isLeft?'⬅ 左':'右 ➡'}</span><input placeholder="${isLeft?'左側說的話':'右側說的話'}" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;"><button class="tbl-del-btn" onclick="this.closest('.dialog-row').remove()">✕</button>`;
+  container.appendChild(row);
+  row.querySelector('input').focus();
+}
 
 /* size */
 function insertSize(s){const txt=savedSel.text||'文字';if(savedSel.text){wrapSel('size',s);}else{insertAtCursor(`[size=${s}]${txt}[/size]`);}closeModal();}
@@ -606,6 +753,40 @@ function selectColor(c){selectedColor=c;document.getElementById('colorVal').text
 function prevYT(type){const v=document.getElementById('f1').value;const id=extractYTId(v);const prev=document.getElementById('ytPrev');const err=document.getElementById('ytErr');const embed=document.getElementById('ytEmbed');if(!v.trim()){prev.textContent='';err.textContent='';embed.innerHTML='';return;}if(id){prev.textContent=`✅ ID：${id} → [${type}]${id}[/${type}]`;err.textContent='';embed.innerHTML=`<iframe class="yt-embed" src="https://www.youtube.com/embed/${id}" allowfullscreen loading="lazy"></iframe>`;}else{prev.textContent='';err.textContent='❌ 無法解析影片 ID，請確認網址';embed.innerHTML='';}}
 function prevTT(){const v=document.getElementById('f1').value;const id=extractTTId(v);const prev=document.getElementById('ttPrev');const err=document.getElementById('ttErr');if(!v.trim()){prev.textContent='';err.textContent='';return;}if(id){prev.textContent=`✅ ID：${id} → [xtiktok]${id}[/xtiktok]`;err.textContent='';}else{prev.textContent='';err.textContent='❌ 無法解析 TikTok ID，請確認網址';}}
 function prevImg(){const v=document.getElementById('f1').value.trim();const d=document.getElementById('imgPrev');if(!v){d.innerHTML='';return;}d.innerHTML=`<img src="${v}" style="max-width:100%;max-height:160px;border-radius:5px;" onerror="this.style.display='none'">`;}
+/* ═══════════════════════════════════════════
+   CATBOX
+═══════════════════════════════════════════ */
+let catboxType='img';
+function setCatboxType(type){
+  catboxType=type;
+  const imgBtn=document.getElementById('cbTypeImg');
+  const vidBtn=document.getElementById('cbTypeVid');
+  if(!imgBtn||!vidBtn)return;
+  if(type==='img'){
+    imgBtn.className='btn btn-gold';imgBtn.style.flex='1';imgBtn.style.fontSize='12px';
+    vidBtn.className='btn btn-ghost';vidBtn.style.flex='1';vidBtn.style.fontSize='12px';
+  } else {
+    vidBtn.className='btn btn-gold';vidBtn.style.flex='1';vidBtn.style.fontSize='12px';
+    imgBtn.className='btn btn-ghost';imgBtn.style.flex='1';imgBtn.style.fontSize='12px';
+  }
+  prevCatbox();
+}
+function prevCatbox(){
+  const el=document.getElementById('cbUrl');
+  const v=el?el.value.trim():'';
+  const err=document.getElementById('cbErr');
+  const prev=document.getElementById('cbPrev');
+  if(!err||!prev)return;
+  if(!v){err.textContent='';prev.innerHTML='';return;}
+  if(!/^https?:\/\//i.test(v)){err.textContent='❌ 請貼上有效的網址';prev.innerHTML='';return;}
+  err.textContent='';
+  if(catboxType==='img'){
+    prev.innerHTML=`<div style="font-size:11px;color:#22c55e;margin-bottom:6px;">✅ 圖片預覽</div><img src="${v}" style="max-width:100%;max-height:180px;border-radius:6px;display:block;" onerror="this.style.display='none'">`;
+  } else {
+    prev.innerHTML=`<div style="font-size:11px;color:#22c55e;margin-bottom:6px;">✅ 影片預覽</div><video src="${v}" controls style="max-width:100%;max-height:200px;border-radius:6px;display:block;" onerror="this.style.display='none'"></video>`;
+  }
+}
+
 function prevPostimg(){
   const el=document.getElementById('piUrl');
   const v=el?el.value.trim():'';
@@ -638,15 +819,28 @@ function confirmInsert(){
     case 'quote':case 'xquote': code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
     case 'xrate': code=`[xrate]${g('f1')}[/xrate]\n`;break;
     case 'xbtn': code=`[xbtn=${g('f1')}]${g('f2')}[/xbtn]\n`;break;
-    case 'xyoutube':case 'xsyoutube':{const id=extractYTId(g('f1'));if(!id){showToast('❌ 無法解析 YouTube ID');return;}code=`[${currentTag}]${id}[/${currentTag}]\n`;break;}
-    case 'xtiktok':{const id=extractTTId(g('f1'));if(!id){showToast('❌ 無法解析 TikTok ID');return;}code=`[xtiktok]${id}[/xtiktok]\n`;break;}
-    case 'xmp4':case 'xvmp4': code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
+    case 'xyoutube':case 'xsyoutube':{const id=extractYTId(g('f1'));if(!id){showToast('❌ 無法解析 YouTube ID');return;}addToGallery(id,'yt');code=`[${currentTag}]${id}[/${currentTag}]\n`;break;}
+    case 'xtiktok':{const id=extractTTId(g('f1'));if(!id){showToast('❌ 無法解析 TikTok ID');return;}addToGallery(id,'tt');code=`[xtiktok]${id}[/xtiktok]\n`;break;}
+    case 'xmp4':case 'xvmp4':{const u=g('f1');if(u)addToGallery(u,'vid');code=`[${currentTag}]${u}[/${currentTag}]\n`;break;}
     case 'xmp3': code=`[xmp3]${g('f1')}[/xmp3]\n`;break;
     case 'xsound': code=`[xsound]${g('f1')}[/xsound]\n`;break;
-    case 'xsendvid':{const id=extractSendvidId(g('f1'));if(!id){showToast('❌ 無法解析 Sendvid ID');return;}code=`[xsendvid]${id}[/xsendvid]\n`;break;}
+    case 'xsendvid':{const id=extractSendvidId(g('f1'));if(!id){showToast('❌ 無法解析 Sendvid ID');return;}addToGallery(id,'vid');code=`[xsendvid]${id}[/xsendvid]\n`;break;}
     case 'xmap': code=`[xmap]${g('f1')}[/xmap]\n`;break;
     case 'xmaplink': code=`[xmaplink]${g('f1')}[/xmaplink]\n`;break;
     case 'ximg':{const url=g('f1');if(url)addToGallery(url,'img');code=`[ximg]${url}[/ximg]\n`;break;}
+    case 'catbox':{
+      const cbEl=document.getElementById('cbUrl');
+      const cbRaw=cbEl?cbEl.value.trim():'';
+      if(!cbRaw){showToast('❌ 請貼上 Catbox 連結');return;}
+      if(!cbRaw.startsWith('http')){showToast('❌ 請貼上有效的網址');return;}
+      if(catboxType==='img'){
+        addToGallery(cbRaw,'img');
+        code=`[ximg]${cbRaw}[/ximg]\n`;
+      } else {
+        addToGallery(cbRaw,'vid');
+        code=`[xmp4]${cbRaw}[/xmp4]\n`;
+      }
+      break;}
     case 'postimages':{
       const el=document.getElementById('piUrl');
       const raw=el?el.value.trim():'';
@@ -656,12 +850,35 @@ function confirmInsert(){
       addToGallery(m[2].trim(),'img');
       code=raw+'\n';
       break;}
-    case 'dialog': code=`[xleft]${g('f1')}[/xleft][xright]${g('f2')}[/xright]\n`;break;
+    case 'dialog':{
+      const rows=[...document.querySelectorAll('#dialogRows .dialog-row')];
+      code=rows.map(r=>{
+        const side=r.dataset.side;
+        const txt=r.querySelector('input').value.trim();
+        return txt?`[x${side}]${txt}[/x${side}]`:'';
+      }).filter(Boolean).join('')+'\n';
+      break;}
     case 'xtable':{
       const head=g('tblHead');
-      const rows=[...document.querySelectorAll('#tblRows .tbl-row')].map(r=>{const inputs=r.querySelectorAll('input');return{k:inputs[0].value.trim(),v:inputs[1].value.trim()};}).filter(r=>r.k||r.v);
-      code=`[xthead]${head}[/xthead]\n`+rows.map(r=>`[xtr=${r.k}]${r.v}[/xtr]`).join('\n')+'\n';break;}
-    case 'hide':{const num=g('f1');const type=g('f2');const content=g('f3');code=`[hide=${num},${type}]${content}[/hide]\n`;break;}
+      const headerCells=[...document.querySelectorAll('#tblHeaderRow .tbl-header-cell')].map(i=>i.value.trim());
+      const dataRows=[...document.querySelectorAll('#tblRows .tbl-row')];
+      const colCount=tblColCount;
+      if(colCount===1){
+        // single col: use xtr= format
+        const rows=dataRows.map(r=>{const cells=[...r.querySelectorAll('.tbl-cell')];return{k:headerCells[0]||'',v:cells[0]?cells[0].value.trim():''};}).filter(r=>r.v);
+        code=`[xthead]${head}[/xthead]\n`+rows.map(r=>`[xtr=${r.k}]${r.v}[/xtr]`).join('\n')+'\n';
+      } else {
+        // multi-col: build HTML table style via xtr with pipe delimiter
+        // header row
+        code=`[xthead]${head}[/xthead]\n`;
+        if(headerCells.some(c=>c)){code+=`[xtr=${headerCells[0]||''}]${headerCells.slice(1).join('|')}[/xtr]\n`;}
+        dataRows.forEach(r=>{
+          const cells=[...r.querySelectorAll('.tbl-cell')].map(i=>i.value.trim());
+          if(cells.some(c=>c))code+=`[xtr=${cells[0]||''}]${cells.slice(1).join('|')}[/xtr]\n`;
+        });
+      }
+      break;}
+    case 'hide':{const num=g('f1');const type_=g('f2');const cnt=g('f3');code=`[hide=${num},${type_}]${cnt}[/hide]\n`;break;}
     case 'size':{const s=g('f1');if(!s){closeModal();return;}const txt=savedSel.text||'文字';code=`[size=${s}]${txt}[/size]`;break;}
     case 'colorpicker':{const c=selectedColor;const txt=savedSel.text||'文字';code=`[${colorModalTag}=${c}]${txt}[/${colorModalTag}]`;break;}
   }
@@ -728,8 +945,8 @@ function updatePreview(){
     ['xvmp4',c=>`<video class="forum-img" controls style="max-width:320px;border-radius:6px;margin:4px 0;"><source src="${c}" type="video/mp4">MP4: ${c}</video>`],
     ['xmp3',c=>`<audio controls style="width:100%;margin:6px 0;"><source src="${c}" type="audio/mpeg">MP3: ${c}</audio>`],
     ['xsound',c=>`<div class="media-ph">🔊 SoundCloud：<a href="${c}" target="_blank" style="color:#3b82f6">${c}</a></div>`],
-    ['xmaplink',c=>`<div class="media-ph">📍 <a href="https://www.google.com/maps/search/${encodeURIComponent(c)}" target="_blank" style="color:#3b82f6">🗺 在 Google Maps 搜尋「${c}」</a></div>`],
-    ['xmap',c=>`<div class="media-ph">🗺 <a href="https://www.google.com/maps?q=${encodeURIComponent(c)}" target="_blank" style="color:#3b82f6">在 Google Maps 查看座標 ${c}</a></div>`],
+    ['xmaplink',c=>`<div style="margin:6px 0"><div class="media-ph" style="margin-bottom:4px;">📍 <a href="https://www.google.com/maps/search/${encodeURIComponent(c)}" target="_blank" style="color:#3b82f6">🗺 在 Google Maps 搜尋「${c}」</a></div><iframe src="https://maps.google.com/maps?q=${encodeURIComponent(c)}&output=embed&z=15" style="width:100%;height:200px;border:none;border-radius:8px;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`],
+    ['xmap',c=>`<div style="margin:6px 0"><div class="media-ph" style="margin-bottom:4px;">🗺 <a href="https://www.google.com/maps?q=${encodeURIComponent(c)}" target="_blank" style="color:#3b82f6">在 Google Maps 查看座標 ${c}</a></div><iframe src="https://maps.google.com/maps?q=${encodeURIComponent(c)}&output=embed&z=15" style="width:100%;height:200px;border:none;border-radius:8px;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`],
   ];
   for(const [tag,fn] of bm){
     h=h.replace(new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`,'g'),(_,c)=>fn(c.trim()));
@@ -769,10 +986,10 @@ function updatePreview(){
   });
   h=h.replace(/\[xtr=[^\]]+\][\s\S]*?\[\/xtr\]/g,'');
 
-  // hide
+  // hide — show lock bar + content preview
   const hideTypes={'1':'發文數','2':'超激值','3':'回應好評度','4':'發文好評度','5':'熱心好評度','6':'歲月值'};
-  h=h.replace(/\[hide=(\d+),(\d+)\]([\s\S]*?)\[\/hide\]/g,(_,num,type)=>`<div class="hide-box">🔒 需要 ${num} ${hideTypes[type]||'歲月值'} 才能觀看</div>`);
-  h=h.replace(/\[hide=(\d+)\]([\s\S]*?)\[\/hide\]/g,(_,num)=>`<div class="hide-box">🔒 需要 ${num} 歲月值 才能觀看</div>`);
+  h=h.replace(/\[hide=(\d+),(\d+)\]([\s\S]*?)\[\/hide\]/g,(_,num,type,cnt)=>`<div class="hide-box"><div style="margin-bottom:6px;">🔒 需要 ${num} ${hideTypes[type]||'歲月值'} 才能觀看</div><div style="padding:8px;border-radius:5px;background:rgba(0,0,0,0.04);font-size:12px;color:#555;border:1px dashed #ddd;">${cnt.trim()||'（無內容）'}</div></div>`);
+  h=h.replace(/\[hide=(\d+)\]([\s\S]*?)\[\/hide\]/g,(_,num,cnt)=>`<div class="hide-box"><div style="margin-bottom:6px;">🔒 需要 ${num} 歲月值 才能觀看</div><div style="padding:8px;border-radius:5px;background:rgba(0,0,0,0.04);font-size:12px;color:#555;border:1px dashed #ddd;">${cnt.trim()||'（無內容）'}</div></div>`);
 
   // newline
   h=h.replace(/\n/g,'<br>');
