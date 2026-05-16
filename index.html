@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-TW" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>流金編輯器</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1117;--surface:#181c27;--surface2:#1e2333;--border:#2a3045;
+  --gold:#f0b429;--gold2:#ffd166;--text:#e8eaf0;--text2:#8b92a8;
+  --red:#ef4444;--blue:#3b82f6;--green:#22c55e;--radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;display:flex;flex-direction:column;font-size:14px;}
+
+/* ── HEADER ── */
+header{background:linear-gradient(135deg,#181c27,#1a1f30);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.logo{font-size:17px;font-weight:700;color:var(--gold);letter-spacing:.5px;}
+.subtitle{font-size:11px;color:var(--text2);}
+.header-actions{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.hint-badge{font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;}
+.hint-badge b{color:var(--gold);}
+
+/* ── MAIN LAYOUT ── */
+.main{display:grid;grid-template-columns:240px 1fr 1fr;flex:1;height:calc(100vh - 50px);overflow:hidden;}
+
+/* ── LEFT PANEL ── */
+.panel-left{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+.panel-left::-webkit-scrollbar{width:3px;}
+.panel-left::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+.section-group{border-bottom:1px solid var(--border);}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;transition:background .15s;}
+.section-header:hover{background:var(--surface2);}
+.section-header .sec-title{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--text2);text-transform:uppercase;}
+.section-header .sec-arrow{font-size:10px;color:var(--text2);transition:transform .2s;}
+.section-header.collapsed .sec-arrow{transform:rotate(-90deg);}
+.section-body{overflow:hidden;}
+.section-body.hidden{display:none;}
+
+.tag-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 14px;background:none;border:none;cursor:pointer;color:var(--text);font-family:inherit;font-size:12px;text-align:left;transition:background .15s;border-left:2px solid transparent;}
+.tag-btn:hover{background:var(--surface2);border-left-color:var(--gold);}
+.tag-btn .icon{font-size:13px;width:18px;text-align:center;flex-shrink:0;}
+.tag-btn .label{flex:1;}
+.tag-btn .code{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text2);background:var(--bg);padding:1px 5px;border-radius:3px;flex-shrink:0;}
+.tag-btn .wrap-hint{display:none;font-size:8px;color:var(--gold);flex-shrink:0;}
+body.has-selection .tag-btn.wrappable .wrap-hint{display:block;}
+body.has-selection .tag-btn.wrappable{border-left-color:rgba(240,180,41,.35);}
+body.has-selection .tag-btn.wrappable:hover{border-left-color:var(--gold);background:rgba(240,180,41,.06);}
+
+/* ── MIDDLE PANEL ── */
+.panel-mid{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;}
+.panel-header{padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:6px;flex-shrink:0;flex-wrap:wrap;}
+.panel-header h3{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+
+/* 格式工具列 */
+.format-toolbar{display:flex;flex-wrap:wrap;gap:3px;padding:6px 10px;background:var(--surface2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.fmt-btn{padding:3px 9px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.fmt-btn:hover{background:var(--surface2);border-color:var(--gold);color:var(--gold);}
+.fmt-btn b{font-weight:700;}
+.fmt-btn i{font-style:italic;}
+.fmt-btn u{text-decoration:underline;}
+.fmt-sep{width:1px;background:var(--border);margin:0 2px;align-self:stretch;}
+
+#selectionBar{display:none;padding:5px 14px;background:rgba(240,180,41,.1);border-bottom:1px solid rgba(240,180,41,.25);font-size:11px;color:var(--gold);flex-shrink:0;}
+#selectionBar.visible{display:flex;align-items:center;gap:6px;}
+
+textarea#editor{flex:1;background:var(--bg);border:none;outline:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;padding:14px;resize:none;caret-color:var(--gold);}
+textarea#editor::selection{background:rgba(240,180,41,.2);}
+
+.editor-footer{padding:6px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;flex-wrap:wrap;gap:4px;}
+.footer-stats{font-size:11px;color:var(--text2);display:flex;gap:12px;}
+
+/* ── RIGHT PANEL ── */
+.panel-right{display:flex;flex-direction:column;overflow:hidden;background:#fff;}
+.panel-right .panel-header{background:#f5f5f0;border-bottom:1px solid #ddd;}
+.panel-right .panel-header h3{color:#666;}
+#preview{flex:1;overflow-y:auto;padding:18px 22px;font-family:'Noto Sans TC',sans-serif;font-size:14px;line-height:1.8;color:#333;background:#fff;}
+
+/* ── BUTTONS ── */
+.btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;transition:all .15s;}
+.btn-gold{background:var(--gold);color:#000;}
+.btn-gold:hover{background:var(--gold2);}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:var(--text2);}
+.btn-blue{background:#1d4ed8;color:#fff;}
+.btn-blue:hover{background:#2563eb;}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;width:460px;max-width:92vw;max-height:90vh;overflow-y:auto;}
+.modal h4{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--gold);}
+.modal label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;margin-top:10px;}
+.modal input,.modal textarea,.modal select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 11px;color:var(--text);font-family:inherit;font-size:12px;outline:none;transition:border .15s;}
+.modal input:focus,.modal textarea:focus{border-color:var(--gold);}
+.modal textarea{resize:vertical;min-height:70px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+
+/* table builder */
+.tbl-builder{margin-top:8px;}
+.tbl-row{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center;}
+.tbl-row input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:12px;outline:none;}
+.tbl-row input:focus{border-color:var(--gold);}
+.tbl-del-btn{background:none;border:1px solid #444;border-radius:5px;color:#888;cursor:pointer;padding:4px 8px;font-size:12px;}
+.tbl-del-btn:hover{color:var(--red);border-color:var(--red);}
+.tbl-add-btn{background:none;border:1px dashed var(--border);border-radius:5px;color:var(--text2);cursor:pointer;padding:5px;width:100%;font-size:12px;font-family:inherit;transition:all .15s;}
+.tbl-add-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+/* postimages steps */
+.postimg-steps{}
+.postimg-step{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.postimg-step:last-child{border-bottom:none;}
+.step-num{width:20px;height:20px;background:var(--gold);color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px;}
+.step-body{flex:1;}
+.step-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.step-desc{font-size:11px;color:var(--text2);line-height:1.5;}
+.postimg-open-btn{display:inline-block;margin-top:5px;background:var(--gold);color:#000;border:none;border-radius:5px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.postimg-open-btn:hover{background:var(--gold2);}
+
+/* gallery */
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;max-height:240px;overflow-y:auto;}
+.gallery-item{position:relative;cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;aspect-ratio:1;}
+.gallery-item:hover{border-color:var(--gold);}
+.gallery-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.gallery-item .gal-del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:3px;padding:1px 5px;font-size:10px;cursor:pointer;display:none;}
+.gallery-item:hover .gal-del{display:block;}
+.gallery-empty{color:var(--text2);font-size:12px;text-align:center;padding:20px;grid-column:1/-1;}
+
+/* color picker row */
+.color-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;}
+.color-swatch{width:22px;height:22px;border-radius:4px;border:2px solid transparent;cursor:pointer;transition:transform .15s;}
+.color-swatch:hover,.color-swatch.active{transform:scale(1.2);border-color:#fff;}
+.color-custom{width:32px;height:28px;border:1px solid var(--border);border-radius:4px;background:var(--bg);cursor:pointer;padding:2px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--gold);color:#000;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:700;opacity:0;transform:translateY(8px);transition:all .3s;z-index:999;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* ── FORUM PREVIEW STYLES ── */
+#preview .xgold-box{border-left:4px solid #c8a000;background:#fffbe6;padding:8px 14px;margin:8px 0;font-weight:600;color:#5a4500;}
+#preview .xcenter-box{text-align:center;font-weight:700;color:#b8860b;font-size:15px;padding:10px 0;}
+#preview .xgban-box{background:linear-gradient(90deg,#ffe066,#ffd000);text-align:center;font-weight:700;color:#5a3e00;padding:14px;border-radius:4px;font-size:16px;margin:8px 0;}
+#preview .xhr-line{border:none;border-top:2px solid #c8a000;margin:12px 0;opacity:.6;}
+#preview .xnote-box{border-left:4px solid #e6b800;background:#fffde7;padding:8px 14px;margin:8px 0;color:#5c4a00;font-size:13px;}
+#preview .xwarn-box{border-left:4px solid #ef4444;background:#fff5f5;padding:8px 14px;margin:8px 0;color:#7f1d1d;font-size:13px;}
+#preview .xblue-box{border-left:4px solid #3b82f6;background:#eff6ff;padding:8px 14px;margin:8px 0;color:#1e3a5f;font-size:13px;}
+#preview .xgreen-box{border-left:4px solid #22c55e;background:#f0fdf4;padding:8px 14px;margin:8px 0;color:#14532d;font-size:13px;}
+#preview .xred-box{border-left:4px solid #ef4444;background:#fff5f5;padding:8px 14px;margin:8px 0;color:#7f1d1d;font-size:13px;}
+#preview .xinfo-box{border-left:4px solid #60a5fa;background:#f0f8ff;padding:8px 14px;margin:8px 0;color:#1e3a5f;font-size:13px;font-style:italic;}
+#preview .xglass-box{background:rgba(200,200,210,.12);border:1px solid rgba(200,200,210,.4);padding:10px 16px;border-radius:8px;margin:8px 0;color:#444;font-size:13px;}
+#preview .xcard-box{border:1px solid #ddd;border-radius:8px;overflow:hidden;margin:8px 0;}
+#preview .xcard-title{background:#f5f5f5;padding:8px 14px;font-weight:700;font-size:13px;border-bottom:1px solid #ddd;color:#333;}
+#preview .xcard-body{padding:10px 14px;font-size:13px;color:#555;}
+#preview .xtag-pill{display:inline-block;background:#e8f0fe;color:#1a56db;border:1px solid #c7d7fc;border-radius:20px;padding:2px 10px;font-size:12px;margin:2px;}
+#preview .xrate-badge{display:inline-flex;align-items:center;gap:4px;background:#fff9e6;border:1px solid #f0d060;border-radius:20px;padding:3px 10px;font-size:12px;color:#8a6000;font-weight:600;}
+#preview .xbtn-link{display:inline-block;background:#f0f0f0;border:1px solid #ccc;border-radius:6px;padding:5px 14px;font-size:13px;color:#333;text-decoration:none;margin:4px 0;}
+#preview .quote-box{border:1px solid #ddd;border-radius:4px;background:#f9f9f9;padding:10px 14px;margin:8px 0;color:#555;font-size:13px;}
+#preview .xquote-box{border-left:3px solid #ccc;padding:4px 14px;margin:8px 0;color:#666;font-size:13px;font-style:italic;}
+#preview .hide-box{background:#fff8e1;border:1px dashed #f0c040;border-radius:4px;padding:10px 14px;margin:8px 0;color:#888;font-size:12px;text-align:center;}
+#preview .dialog-container{margin:8px 0;}
+#preview .xleft-bubble{display:flex;justify-content:flex-start;margin:4px 0;}
+#preview .xleft-bubble span{background:#f0f0f0;border-radius:0 12px 12px 12px;padding:8px 14px;max-width:70%;font-size:13px;color:#333;}
+#preview .xright-bubble{display:flex;justify-content:flex-end;margin:4px 0;}
+#preview .xright-bubble span{background:#dcf8c6;border-radius:12px 0 12px 12px;padding:8px 14px;max-width:70%;font-size:13px;color:#333;}
+#preview .xtable{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px;}
+#preview .xtable th{background:#f5f5f0;border:1px solid #ddd;padding:8px 12px;text-align:left;font-weight:700;color:#333;}
+#preview .xtable td{border:1px solid #ddd;padding:7px 12px;color:#555;}
+#preview .xtable tr:nth-child(even) td{background:#fafafa;}
+#preview .media-ph{background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin:6px 0;font-size:12px;color:#888;text-align:center;}
+#preview img.forum-img{max-width:100%;border-radius:4px;margin:4px 0;display:block;}
+#preview .yt-embed{width:100%;aspect-ratio:16/9;border-radius:6px;border:none;margin:6px 0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">✦ 流金編輯器</div>
+  <div class="subtitle" data-i18n="subtitle">G-Years 論壇 BBCode 組合器</div>
+  <div class="header-actions">
+    <div class="hint-badge" data-i18n="selHint">💡 <b>選取文字</b>後按功能鍵可包裹標籤</div>
+    <button class="btn btn-ghost" onclick="toggleLang()" id="langBtn">🌐 EN</button>
+    <button class="btn btn-ghost" onclick="undoAction()" title="復原 Ctrl+Z">↩ <span data-i18n="undo">復原</span></button>
+    <button class="btn btn-ghost" onclick="saveFile()" title="另存新檔">💾 <span data-i18n="save">另存新檔</span></button>
+    <button class="btn btn-gold" onclick="copyCode()">📋 <span data-i18n="copyAll">複製全部</span></button>
+  </div>
+</header>
+
+<div class="main">
+<!-- ═══ LEFT PANEL ═══ -->
+<div class="panel-left" id="leftPanel"></div>
+
+<!-- ═══ MIDDLE PANEL ═══ -->
+<div class="panel-mid">
+  <div class="panel-header">
+    <h3 data-i18n="editor">✏️ 編輯器</h3>
+    <button class="btn btn-ghost" onclick="clearEditor()" data-i18n="clear">清空</button>
+  </div>
+
+  <!-- 格式工具列 -->
+  <div class="format-toolbar">
+    <button class="fmt-btn" onclick="wrapFmt('b')" title="粗體"><b>B</b></button>
+    <button class="fmt-btn" onclick="wrapFmt('i')" title="斜體"><i>I</i></button>
+    <button class="fmt-btn" onclick="wrapFmt('u')" title="底線"><u>U</u></button>
+    <button class="fmt-btn" onclick="wrapFmt('strike')" title="刪除線"><s>S</s></button>
+    <div class="fmt-sep"></div>
+    <button class="fmt-btn" onclick="openSizeModal()" title="文字大小">A↕</button>
+    <button class="fmt-btn" onclick="openColorModal('color')" title="字體顏色">A<span style="color:#f0b429;">■</span></button>
+    <button class="fmt-btn" onclick="openColorModal('backcolor')" title="背景顏色">A<span style="background:#f0b429;color:#000;padding:0 2px;">bg</span></button>
+    <div class="fmt-sep"></div>
+    <button class="fmt-btn" onclick="wrapFmt('align','center')" title="置中">≡</button>
+    <button class="fmt-btn" onclick="wrapFmt('url')" title="超連結">🔗</button>
+  </div>
+
+  <div id="selectionBar">✨ <span data-i18n="selActive">已選取文字 — 點左側標籤可包裹</span></div>
+  <textarea id="editor"
+    placeholder="點左側按鈕插入 BBCode，或直接輸入..."
+    oninput="onEditorInput()"
+    onmouseup="checkSel()"
+    onkeyup="checkSel()"
+    onkeydown="handleKeyDown(event)"
+  ></textarea>
+  <div class="editor-footer">
+    <div class="footer-stats">
+      <span id="charCount">0 字元</span>
+      <span id="zhCount">中文：0 字</span>
+    </div>
+    <button class="btn btn-ghost" style="font-size:10px;" onclick="updatePreview()">🔄 <span data-i18n="refresh">重新預覽</span></button>
+  </div>
+</div>
+
+<!-- ═══ RIGHT PANEL ═══ -->
+<div class="panel-right">
+  <div class="panel-header">
+    <h3 data-i18n="preview">👁 論壇預覽</h3>
+  </div>
+  <div id="preview"><p style="color:#aaa;font-size:13px;text-align:center;margin-top:50px;" data-i18n="previewHint">← 從左側選擇標籤開始</p></div>
+</div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOverlay(event)">
+  <div class="modal">
+    <h4 id="modalTitle"></h4>
+    <div id="modalBody"></div>
+    <div class="modal-actions" id="modalActions">
+      <button class="btn btn-ghost" onclick="closeModal()"><span data-i18n="cancel">取消</span></button>
+      <button class="btn btn-gold" id="modalOK" onclick="confirmInsert()"><span data-i18n="insert">插入</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   I18N
+═══════════════════════════════════════════ */
+let lang = 'zh';
+const i18n = {
+  zh:{subtitle:'G-Years 論壇 BBCode 組合器',selHint:'💡 <b>選取文字</b>後按功能鍵可包裹標籤',undo:'復原',save:'另存新檔',copyAll:'複製全部',editor:'✏️ 編輯器',clear:'清空',selActive:'已選取文字 — 點左側標籤可包裹',preview:'👁 論壇預覽',previewHint:'← 從左側選擇標籤開始',refresh:'重新預覽',cancel:'取消',insert:'插入',charUnit:'字元',zhUnit:'中文：',insert_ok:'✅ 已插入！',copied:'✅ 已複製到剪貼簿！',saved:'✅ 已儲存為文字檔！',cleared:'已清空',confirmClear:'確定要清空編輯器嗎？'},
+  en:{subtitle:'G-Years Forum BBCode Composer',selHint:'💡 <b>Select text</b> then click a tag to wrap',undo:'Undo',save:'Save As',copyAll:'Copy All',editor:'✏️ Editor',clear:'Clear',selActive:'Text selected — click a tag to wrap',preview:'👁 Preview',previewHint:'← Select a tag from the left',refresh:'Refresh',cancel:'Cancel',insert:'Insert',charUnit:' chars',zhUnit:'CJK: ',insert_ok:'✅ Inserted!',copied:'✅ Copied to clipboard!',saved:'✅ Saved as text file!',cleared:'Cleared',confirmClear:'Clear the editor?'}
+};
+function t(k){return i18n[lang][k]||k;}
+function toggleLang(){lang=lang==='zh'?'en':'zh';document.getElementById('langBtn').textContent=lang==='zh'?'🌐 EN':'🌐 中文';document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){el.placeholder=t(k)||el.placeholder;}else{el.innerHTML=i18n[lang][k]||el.innerHTML;}});buildLeftPanel();updatePreview();}
+
+/* ═══════════════════════════════════════════
+   UNDO STACK
+═══════════════════════════════════════════ */
+let undoStack=[];
+let undoPtr=-1;
+const MAX_UNDO=100;
+function pushUndo(val){if(undoPtr<undoStack.length-1)undoStack=undoStack.slice(0,undoPtr+1);undoStack.push(val);if(undoStack.length>MAX_UNDO)undoStack.shift();undoPtr=undoStack.length-1;}
+function undoAction(){if(undoPtr>0){undoPtr--;editor.value=undoStack[undoPtr];updatePreview();updateStats();}else if(undoPtr===0){editor.value='';updatePreview();updateStats();}}
+function handleKeyDown(e){if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undoAction();}}
+let undoTimer;
+function onEditorInput(){clearTimeout(undoTimer);undoTimer=setTimeout(()=>pushUndo(editor.value),400);s2tConvert();updatePreview();updateStats();}
+
+/* ═══════════════════════════════════════════
+   S2T (Simplified → Traditional)
+   Basic common substitution map
+═══════════════════════════════════════════ */
+const s2tMap={'爱':'愛','办':'辦','报':'報','边':'邊','变':'變','标':'標','长':'長','场':'場','车':'車','称':'稱','传':'傳','当':'當','党':'黨','东':'東','动':'動','对':'對','发':'發','风':'風','复':'復','给':'給','关':'關','观':'觀','国':'國','过':'過','还':'還','话':'話','画':'畫','汇':'匯','会':'會','机':'機','际':'際','进':'進','经':'經','来':'來','乐':'樂','离':'離','里':'裡','联':'聯','楼':'樓','么':'麼','门':'門','面':'麵','难':'難','农':'農','齐':'齊','气':'氣','钱':'錢','强':'強','请':'請','书':'書','数':'數','说':'說','台':'臺','题':'題','头':'頭','团':'團','万':'萬','为':'為','问':'問','现':'現','线':'線','响':'響','样':'樣','业':'業','义':'義','应':'應','语':'語','员':'員','远':'遠','战':'戰','这':'這','种':'種','专':'專','总':'總'};
+function s2tConvert(){const ta=document.getElementById('editor');const pos=ta.selectionStart;let v=ta.value;let changed=false;for(const[s,t_]of Object.entries(s2tMap)){if(v.includes(s)){v=v.split(s).join(t_);changed=true;}}if(changed){ta.value=v;ta.selectionStart=ta.selectionEnd=pos;}}
+
+/* ═══════════════════════════════════════════
+   GALLERY
+═══════════════════════════════════════════ */
+let gallery=[];
+function addToGallery(url,type='img'){if(gallery.find(g=>g.url===url))return;gallery.unshift({url,type,ts:Date.now()});if(gallery.length>30)gallery=gallery.slice(0,30);}
+function renderGallery(container){container.innerHTML='';if(!gallery.length){container.innerHTML='<div class="gallery-empty">尚無已上傳的圖片/影片連結</div>';return;}gallery.forEach((g,i)=>{const d=document.createElement('div');d.className='gallery-item';if(g.type==='img'){d.innerHTML=`<img src="${g.url}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2212%22 fill=%22%23888%22 text-anchor=%22middle%22>No preview</text></svg>'"><button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);renderGallery(this.closest('.gallery-grid'))">✕</button>`;}else{d.innerHTML=`<div style="width:100%;height:100%;background:#222;display:flex;align-items:center;justify-content:center;font-size:20px;">🎬</div><button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);renderGallery(this.closest('.gallery-grid'))">✕</button>`;}d.title=g.url;d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};container.appendChild(d);});}
+
+/* ═══════════════════════════════════════════
+   SELECTION
+═══════════════════════════════════════════ */
+const editor=document.getElementById('editor');
+let savedSel={start:0,end:0,text:''};
+function checkSel(){const s=editor.selectionStart,e=editor.selectionEnd,has=s!==e;savedSel=has?{start:s,end:e,text:editor.value.slice(s,e)}:{start:s,end:e,text:''};document.body.classList.toggle('has-selection',has);document.getElementById('selectionBar').classList.toggle('visible',has);}
+
+/* ═══════════════════════════════════════════
+   INSERT / WRAP
+═══════════════════════════════════════════ */
+function insertAtCursor(txt){pushUndo(editor.value);const s=editor.selectionStart,e=editor.selectionEnd;editor.value=editor.value.slice(0,s)+txt+editor.value.slice(e);editor.selectionStart=editor.selectionEnd=s+txt.length;editor.focus();updatePreview();updateStats();}
+function wrapSel(tag,attr){const{start,end,text}=savedSel;const open=attr?`[${tag}=${attr}]`:`[${tag}]`;const close=`[/${tag}]`;pushUndo(editor.value);const wrapped=open+text+close;editor.value=editor.value.slice(0,start)+wrapped+editor.value.slice(end);editor.selectionStart=start;editor.selectionEnd=start+wrapped.length;editor.focus();savedSel={start:0,end:0,text:''};document.body.classList.remove('has-selection');document.getElementById('selectionBar').classList.remove('visible');updatePreview();updateStats();}
+const directWrap=['xgold','xcenter','xgban','xnote','xwarn','xblue','xgreen','xred','xinfo','xglass','quote','xquote','xtag','b','i','u','strike'];
+function wrapOrModal(tag){if(savedSel.text&&directWrap.includes(tag)){wrapSel(tag);}else{openModal(tag);}}
+function wrapFmt(tag,attr){if(savedSel.text){wrapSel(tag,attr);}else{const cursor=`[${tag}${attr?'='+attr:''}][/${tag}]`;insertAtCursor(cursor);const pos=editor.selectionStart-(tag.length+3+(attr?attr.length+1:0));editor.selectionStart=editor.selectionEnd=pos;}}
+
+/* ═══════════════════════════════════════════
+   STATS
+═══════════════════════════════════════════ */
+function updateStats(){const v=editor.value;document.getElementById('charCount').textContent=v.length+t('charUnit');const zh=(v.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g)||[]).length;document.getElementById('zhCount').textContent=t('zhUnit')+zh+'字';}
+
+/* ═══════════════════════════════════════════
+   FILE OPS
+═══════════════════════════════════════════ */
+function saveFile(){const blob=new Blob([editor.value],{type:'text/plain;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='liujin-bbcode.txt';a.click();showToast(t('saved'));}
+function copyCode(){if(!editor.value.trim())return;navigator.clipboard.writeText(editor.value).then(()=>showToast(t('copied')));}
+function clearEditor(){if(editor.value&&confirm(t('confirmClear'))){pushUndo(editor.value);editor.value='';updatePreview();updateStats();savedSel={start:0,end:0,text:''}; document.body.classList.remove('has-selection');document.getElementById('selectionBar').classList.remove('visible');}}
+function showToast(msg){const t_=document.getElementById('toast');t_.textContent=msg;t_.classList.add('show');setTimeout(()=>t_.classList.remove('show'),2500);}
+
+/* ═══════════════════════════════════════════
+   MEDIA ID PARSING
+═══════════════════════════════════════════ */
+function extractYTId(input){input=input.trim();if(/^[a-zA-Z0-9_-]{11}$/.test(input))return input;try{const u=new URL(input);if(u.hostname==='youtu.be')return u.pathname.slice(1).split('?')[0];if(u.searchParams.get('v'))return u.searchParams.get('v');const sm=u.pathname.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);if(sm)return sm[1];const em=u.pathname.match(/\/embed\/([a-zA-Z0-9_-]{11})/);if(em)return em[1];}catch(e){}const m=input.match(/(?:v=|\/embed\/|\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);return m?m[1]:null;}
+function extractTTId(input){input=input.trim();if(/^\d{15,20}$/.test(input))return input;try{const u=new URL(input);const m=u.pathname.match(/\/video\/(\d+)/);if(m)return m[1];}catch(e){}const m=input.match(/\/video\/(\d+)/);return m?m[1]:null;}
+
+/* ═══════════════════════════════════════════
+   SENDVID
+═══════════════════════════════════════════ */
+function extractSendvidId(input){
+  input=input.trim();
+  // already an ID: alphanumeric 6-12 chars
+  if(/^[a-z0-9]{4,12}$/.test(input))return input;
+  try{const u=new URL(input);const m=u.pathname.match(/\/([a-z0-9]{4,12})$/i);if(m)return m[1];}catch(e){}
+  const m=input.match(/sendvid\.com\/([a-z0-9]{4,12})/i);
+  return m?m[1]:null;
+}
+function prevSendvid(){
+  const v=document.getElementById('f1').value;
+  const id=extractSendvidId(v);
+  const prev=document.getElementById('svPrev');
+  const err=document.getElementById('svErr');
+  const embed=document.getElementById('svEmbed');
+  if(!v.trim()){prev.textContent='';err.textContent='';embed.innerHTML='';return;}
+  if(id){
+    prev.textContent=`✅ ID：${id}  →  [xsendvid]${id}[/xsendvid]`;
+    err.textContent='';
+    embed.innerHTML=`<iframe src="https://sendvid.com/embed/${id}" style="width:100%;aspect-ratio:16/9;border-radius:6px;border:none;" allowfullscreen loading="lazy"></iframe>`;
+  }else{
+    prev.textContent='';
+    err.textContent='❌ 無法解析 Sendvid ID，請確認網址格式';
+    embed.innerHTML='';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   SIZE MODAL
+═══════════════════════════════════════════ */
+function openSizeModal(){openModal('size');}
+const SIZES=[1,2,3,4,5,6,7];
+
+/* ═══════════════════════════════════════════
+   COLOR MODAL
+═══════════════════════════════════════════ */
+let colorModalTag='color';
+function openColorModal(type){colorModalTag=type;openModal('colorpicker');}
+const COLORS=['#000000','#ffffff','#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#f0b429','#06b6d4','#84cc16'];
+
+/* ═══════════════════════════════════════════
+   BUILD LEFT PANEL
+═══════════════════════════════════════════ */
+function buildLeftPanel(){
+  const panel=document.getElementById('leftPanel');
+  panel.innerHTML='';
+  const sections=[
+    {key:'format',title:lang==='zh'?'🖋 文字格式':'🖋 Format',tags:[
+      {tag:'b',icon:'B',label:lang==='zh'?'粗體':'Bold',code:'b',wrap:true},
+      {tag:'i',icon:'I',label:lang==='zh'?'斜體':'Italic',code:'i',wrap:true},
+      {tag:'u',icon:'U',label:lang==='zh'?'底線':'Underline',code:'u',wrap:true},
+      {tag:'strike',icon:'S',label:lang==='zh'?'刪除線':'Strikethrough',code:'strike',wrap:true},
+      {tag:'size',icon:'A↕',label:lang==='zh'?'文字大小':'Font Size',code:'size',modal:true},
+      {tag:'color',icon:'A🎨',label:lang==='zh'?'字體顏色':'Font Color',code:'color',modal:true},
+      {tag:'backcolor',icon:'A◼',label:lang==='zh'?'背景顏色':'Bg Color',code:'backcolor',modal:true},
+    ]},
+    {key:'layout',title:lang==='zh'?'📐 基本排版':'📐 Layout',tags:[
+      {tag:'xhr',icon:'➖',label:lang==='zh'?'金色分隔線':'Gold Divider',code:'xhr',simple:true},
+      {tag:'xgold',icon:'🏷',label:lang==='zh'?'章節標題':'Section Title',code:'xgold',wrap:true},
+      {tag:'xcenter',icon:'⬛',label:lang==='zh'?'置中標題':'Center Title',code:'xcenter',wrap:true},
+      {tag:'xgban',icon:'🟨',label:lang==='zh'?'金色橫幅':'Gold Banner',code:'xgban',wrap:true},
+    ]},
+    {key:'callout',title:lang==='zh'?'💡 提示框':'💡 Callouts',tags:[
+      {tag:'xnote',icon:'📌',label:lang==='zh'?'重點框（黃）':'Note (Yellow)',code:'xnote',wrap:true},
+      {tag:'xwarn',icon:'⚠️',label:lang==='zh'?'警告框（紅）':'Warning (Red)',code:'xwarn',wrap:true},
+      {tag:'xblue',icon:'🔵',label:lang==='zh'?'技術提示（藍）':'Info (Blue)',code:'xblue',wrap:true},
+      {tag:'xgreen',icon:'✅',label:lang==='zh'?'成功訊息（綠）':'Success (Green)',code:'xgreen',wrap:true},
+      {tag:'xred',icon:'🚫',label:lang==='zh'?'禁止事項（紅）':'Forbidden (Red)',code:'xred',wrap:true},
+      {tag:'xinfo',icon:'ℹ️',label:lang==='zh'?'資訊框（藍）':'Info Box (Blue)',code:'xinfo',wrap:true},
+      {tag:'xglass',icon:'🪟',label:lang==='zh'?'玻璃風格':'Glass Style',code:'xglass',wrap:true},
+      {tag:'xcard',icon:'🃏',label:lang==='zh'?'卡片':'Card',code:'xcard',modal:true},
+    ]},
+    {key:'quote',title:lang==='zh'?'💬 引用':'💬 Quote',tags:[
+      {tag:'xquote',icon:'｜',label:lang==='zh'?'引用框 type1 (斜體)':'Quote type1 (italic)',code:'xquote',wrap:true},
+      {tag:'quote',icon:'「」',label:lang==='zh'?'引用框 type2 (框格)':'Quote type2 (box)',code:'quote',wrap:true},
+    ]},
+    {key:'badge',title:lang==='zh'?'🏷 標籤與評分':'🏷 Tags & Rating',tags:[
+      {tag:'xtag',icon:'🔖',label:lang==='zh'?'標籤 Pill':'Tag Pill',code:'xtag',wrap:true},
+      {tag:'xrate',icon:'⭐',label:lang==='zh'?'評分':'Rating',code:'xrate',modal:true},
+      {tag:'xbtn',icon:'🔘',label:lang==='zh'?'按鈕連結':'Button Link',code:'xbtn',modal:true},
+    ]},
+    {key:'media',title:lang==='zh'?'🎬 多媒體':'🎬 Media',tags:[
+      {tag:'xyoutube',icon:'▶️',label:'YouTube',code:'xyoutube',modal:true},
+      {tag:'xsyoutube',icon:'📱',label:'YouTube Shorts',code:'xsyoutube',modal:true},
+      {tag:'xmp4',icon:'🎥',label:'MP4 影片',code:'xmp4',modal:true},
+      {tag:'xvmp4',icon:'📹',label:lang==='zh'?'直立影片 MP4':'Vertical MP4',code:'xvmp4',modal:true},
+      {tag:'xtiktok',icon:'🎶',label:'TikTok',code:'xtiktok',modal:true},
+      {tag:'xmp3',icon:'🎵',label:'MP3 音樂',code:'xmp3',modal:true},
+      {tag:'xsound',icon:'🔊',label:'SoundCloud',code:'xsound',modal:true},
+      {tag:'xsendvid',icon:'📺',label:'Sendvid',code:'xsendvid',modal:true},
+      {tag:'xmap',icon:'🗺',label:lang==='zh'?'地圖座標':'Map Coord',code:'xmap',modal:true},
+      {tag:'xmaplink',icon:'📍',label:lang==='zh'?'地點名稱':'Map Place',code:'xmaplink',modal:true},
+    ]},
+    {key:'image',title:lang==='zh'?'🖼 圖片':'🖼 Images',tags:[
+      {tag:'ximg',icon:'🖼',label:lang==='zh'?'插入圖片連結':'Insert Image URL',code:'ximg',modal:true},
+      {tag:'postimages',icon:'📤',label:lang==='zh'?'Postimages 上傳':'Postimages Upload',code:'半自動',modal:true,gold:true},
+      {tag:'gallery',icon:'🗂',label:lang==='zh'?'圖庫':'Gallery',code:'gallery',modal:true},
+    ]},
+    {key:'dialog',title:lang==='zh'?'💬 對話':'💬 Dialog',tags:[
+      {tag:'dialog',icon:'🗨',label:lang==='zh'?'對話泡泡':'Chat Bubbles',code:'xleft/xright',modal:true},
+    ]},
+    {key:'table',title:lang==='zh'?'📊 表格':'📊 Table',tags:[
+      {tag:'xtable',icon:'📋',label:lang==='zh'?'表格':'Table',code:'xthead/xtr',modal:true},
+    ]},
+    {key:'hide',title:lang==='zh'?'🔒 加密':'🔒 Hide',tags:[
+      {tag:'hide',icon:'🔐',label:lang==='zh'?'加密內容':'Hidden Content',code:'hide',modal:true},
+    ]},
+  ];
+
+  sections.forEach(sec=>{
+    const grp=document.createElement('div');
+    grp.className='section-group';
+    grp.innerHTML=`<div class="section-header" onclick="toggleSection(this)">
+      <span class="sec-title">${sec.title}</span><span class="sec-arrow">▼</span>
+    </div>
+    <div class="section-body" id="sec-${sec.key}"></div>`;
+    const body=grp.querySelector('.section-body');
+    sec.tags.forEach(t_=>{
+      const btn=document.createElement('button');
+      btn.className='tag-btn'+(t_.wrap?' wrappable':'');
+      btn.innerHTML=`<span class="icon">${t_.icon}</span><span class="label">${t_.label}</span><span class="code"${t_.gold?' style="color:var(--gold)"':''}>${t_.code}</span>${t_.wrap?'<span class="wrap-hint">▶包裹</span>':''}`;
+      if(t_.simple){btn.onclick=()=>insertAtCursor('[xhr]x[/xhr]\n');}
+      else if(t_.wrap){btn.onclick=()=>wrapOrModal(t_.tag);}
+      else{btn.onclick=()=>openModal(t_.tag);}
+      body.appendChild(btn);
+    });
+    panel.appendChild(grp);
+  });
+}
+
+function toggleSection(header){header.classList.toggle('collapsed');const body=header.nextElementSibling;body.classList.toggle('hidden');}
+
+/* ═══════════════════════════════════════════
+   MODAL ENGINE
+═══════════════════════════════════════════ */
+let currentTag='';
+function openModal(tag){
+  currentTag=tag;
+  const overlay=document.getElementById('modalOverlay');
+  const hasSel=!!savedSel.text;
+  const selVal=hasSel?savedSel.text:'';
+
+  const titles={
+    xgold:'🏷 章節標題',xcenter:'⬛ 置中標題',xgban:'🟨 金色橫幅',
+    xnote:'📌 重點框',xwarn:'⚠️ 警告框',xblue:'🔵 技術提示',xgreen:'✅ 成功訊息',xred:'🚫 禁止事項',xinfo:'ℹ️ 資訊框',xglass:'🪟 玻璃風格框',
+    xcard:'🃏 卡片',quote:'「」引用框 type2（框格）',xquote:'｜引用框 type1（斜體）',
+    xtag:'🔖 標籤',xrate:'⭐ 評分',xbtn:'🔘 按鈕連結',
+    xyoutube:'▶️ YouTube 長影片',xsyoutube:'📱 YouTube Shorts',xmp4:'🎥 MP4 影片',xvmp4:'📹 直立 MP4',xmp3:'🎵 MP3 音樂',xtiktok:'🎶 TikTok',xsound:'🔊 SoundCloud',xsendvid:'📺 Sendvid 影片',xmap:'🗺 地圖座標（xmap）',xmaplink:'📍 地點名稱（xmaplink）',
+    ximg:'🖼 插入圖片',postimages:'📤 Postimages 半自動上傳',gallery:'🗂 圖庫',
+    dialog:'🗨 對話泡泡',xtable:'📋 表格',hide:'🔐 加密內容',
+    size:'A↕ 文字大小',colorpicker:'🎨 顏色選擇',
+  };
+  document.getElementById('modalTitle').textContent=titles[tag]||tag;
+  document.getElementById('modalOK').style.display='';
+  document.getElementById('modalActions').style.display='';
+
+  let html='';
+  switch(tag){
+    case 'xgold':case 'xcenter':case 'xgban':case 'xnote':case 'xwarn':case 'xblue':case 'xgreen':case 'xred':case 'xinfo':case 'xglass':
+      html=`<label>內容</label><input id="f1" value="${esc(selVal)}" placeholder="輸入內容">`;break;
+    case 'xcard':
+      html=`<label>卡片標題</label><input id="f1" placeholder="例：推薦作品"><label>卡片內容</label><textarea id="f2">${esc(selVal)}</textarea>`;break;
+    case 'quote':case 'xquote':
+      html=`<label>引用內容</label><textarea id="f1">${esc(selVal)}</textarea>`;break;
+    case 'xtag':
+      html=`<label>標籤名稱</label><input id="f1" value="${esc(selVal)}" placeholder="例：咖啡">`;break;
+    case 'xrate':
+      html=`<label>分數（0~10）</label><input id="f1" type="number" min="0" max="10" step="0.1" placeholder="8.7">`;break;
+    case 'xbtn':
+      html=`<label>URL（不可含 & 符號）</label><input id="f1" placeholder="https://example.com"><label>按鈕文字</label><input id="f2" value="${esc(selVal)}" placeholder="點我查看">`;break;
+    case 'xyoutube':case 'xsyoutube':
+      html=`<label>貼上 YouTube 網址或影片 ID</label><input id="f1" placeholder="https://youtu.be/xxxxx 或 11碼ID" oninput="prevYT('${tag}')">
+      <div id="ytPrev" style="margin-top:6px;font-size:11px;min-height:14px;font-family:'JetBrains Mono',monospace;color:#22c55e;word-break:break-all;"></div>
+      <div id="ytErr" style="font-size:11px;color:#ef4444;min-height:14px;"></div>
+      <div id="ytEmbed" style="margin-top:8px;"></div>`;break;
+    case 'xtiktok':
+      html=`<label>貼上 TikTok 網址或影片 ID</label><input id="f1" placeholder="https://www.tiktok.com/@user/video/xxxxx 或 數字ID" oninput="prevTT()">
+      <div id="ttPrev" style="margin-top:6px;font-size:11px;min-height:14px;font-family:'JetBrains Mono',monospace;color:#22c55e;word-break:break-all;"></div>
+      <div id="ttErr" style="font-size:11px;color:#ef4444;min-height:14px;"></div>`;break;
+    case 'xmp4':case 'xvmp4':
+      html=`<label>影片連結網址（.mp4）</label><input id="f1" placeholder="https://...mp4">`;break;
+    case 'xmp3':
+      html=`<label>音檔連結網址（.mp3）</label><input id="f1" placeholder="https://...mp3">`;break;
+    case 'xsound':
+      html=`<label>SoundCloud 連結</label><input id="f1" placeholder="https://soundcloud.com/...">`; break;
+    case 'xsendvid':
+      html=`<label>貼上 Sendvid 網址或影片 ID</label>
+      <input id="f1" placeholder="https://sendvid.com/8ayyh3m4 或 8ayyh3m4" oninput="prevSendvid()">
+      <div id="svPrev" style="margin-top:6px;font-size:11px;min-height:14px;font-family:'JetBrains Mono',monospace;color:#22c55e;word-break:break-all;"></div>
+      <div id="svErr" style="font-size:11px;color:#ef4444;min-height:14px;"></div>
+      <div id="svEmbed" style="margin-top:8px;"></div>`;break;
+    case 'xmap':
+      html=`<label>座標（緯度,經度 格式）</label><input id="f1" placeholder="例：25.0330,121.5654">
+      <div style="margin-top:6px;font-size:11px;color:var(--text2);">可從 Google Maps 點右鍵取得座標，貼上即可。</div>`;break;
+    case 'xmaplink':
+      html=`<label>地點名稱</label><input id="f1" placeholder="例：台北 101">
+      <div style="margin-top:6px;font-size:11px;color:var(--text2);">輸入地點名稱，論壇會自動連結至 Google Maps 搜尋。</div>`;break;
+    case 'ximg':
+      html=`<label>圖片連結網址</label><input id="f1" placeholder="https://i.postimg.cc/xxx/image.jpg" oninput="prevImg()">
+      <div id="imgPrev" style="margin-top:8px;"></div>`;break;
+    case 'postimages':
+      html=`<div class="postimg-steps">
+        <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">開啟 Postimages 上傳</div><div class="step-desc">點下方按鈕在新分頁開啟，上傳你的圖片。</div><button class="postimg-open-btn" onclick="window.open('https://postimages.org/','_blank')">🔗 開啟 Postimages</button></div></div>
+        <div class="postimg-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">選擇「論壇外連」並複製</div><div class="step-desc">上傳完成後，切換到<b>論壇</b>選項，複製完整的連結代碼。<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#888;">[url=...][img]...[/img][/url]</span></div></div></div>
+        <div class="postimg-step"><div class="step-num">3</div><div class="step-body"><div class="step-title">貼上論壇外連代碼</div>
+        <label style="margin-top:6px;">貼上論壇外連代碼</label>
+        <textarea id="piUrl" rows="3" placeholder="[url=https://i.postimg.cc/xxx/img.jpg][img]https://i.postimg.cc/xxx/img.jpg[/img][/url]" oninput="prevPostimg()" style="font-family:'JetBrains Mono',monospace;font-size:11px;"></textarea>
+        <div id="piErr" style="font-size:11px;color:#ef4444;min-height:12px;margin-top:4px;"></div>
+        <div id="piImgPrev" style="margin-top:6px;"></div>
+        </div></div></div>`;
+      document.getElementById('modalOK').textContent='插入';
+      break;
+    case 'gallery':
+      html=`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;">點選圖片可插入 BBCode，上傳圖片後會自動儲存於此。</div><div class="gallery-grid" id="galGrid"></div>`;
+      document.getElementById('modalOK').style.display='none';break;
+    case 'dialog':
+      html=`<label>左側說的話（xleft）</label><input id="f1" placeholder="例：你到底什麼時候要把 Design 定好？">
+      <label>右側說的話（xright）</label><input id="f2" placeholder="例：再給我兩天，我想一下。">`;break;
+    case 'xtable':
+      html=`<label>表格標題</label><input id="tblHead" placeholder="例：咖啡館資訊">
+      <div style="margin-top:10px;font-size:11px;color:var(--text2);margin-bottom:6px;">表格列 <span style="color:var(--text2);">（欄位名 | 內容）</span></div>
+      <div class="tbl-builder" id="tblRows"></div>
+      <button class="tbl-add-btn" onclick="addTableRow()">+ 新增一列</button>`;
+      break;
+    case 'hide':
+      html=`<label>限制數值</label><input id="f1" placeholder="例：1000">
+      <label>限制類型</label>
+      <select id="f2">
+        <option value="6">歲月值（預設）</option>
+        <option value="1">發文數</option>
+        <option value="2">超激值</option>
+        <option value="3">回應好評度</option>
+        <option value="4">發文好評度</option>
+        <option value="5">熱心好評度</option>
+      </select>
+      <label>隱藏內容</label><textarea id="f3">${esc(selVal)}</textarea>`;break;
+    case 'size':
+      html=`<label>選擇文字大小（1~7）</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${SIZES.map(s=>`<button onclick="insertSize(${s})" style="padding:5px 12px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:${8+s*2}px;cursor:pointer;">${s}</button>`).join('')}</div>
+      <label style="margin-top:10px;">或直接輸入大小</label><input id="f1" type="number" min="1" max="7" placeholder="4">`;
+      document.getElementById('modalOK').textContent='插入';break;
+    case 'colorpicker':
+      html=`<label>選擇顏色</label>
+      <div class="color-row">${COLORS.map(c=>`<div class="color-swatch" style="background:${c};border-color:${c==='#ffffff'?'#999':c}" onclick="selectColor('${c}')" title="${c}"></div>`).join('')}
+      <input type="color" class="color-custom" id="colorCustom" value="#f0b429" title="自訂顏色">
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text2);">選取的顏色：<span id="colorVal" style="font-family:'JetBrains Mono',monospace;color:var(--gold);">#f0b429</span></div>
+      <div id="colorPreview" style="margin-top:6px;padding:6px 10px;border-radius:5px;background:#111;font-size:13px;">${selVal||'文字預覽'}</div>`;break;
+  }
+
+  document.getElementById('modalBody').innerHTML=html;
+  overlay.classList.add('active');
+  setTimeout(()=>{
+    if(tag==='gallery')renderGallery(document.getElementById('galGrid'));
+    if(tag==='xtable'){addTableRow();addTableRow();}
+    if(tag==='colorpicker'){document.getElementById('colorCustom').addEventListener('input',e=>{selectColor(e.target.value);});}
+    const f=document.getElementById('f1')||document.getElementById('piUrl')||document.getElementById('tblHead');
+    if(f)f.focus();
+  },80);
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* table row builder */
+let tblRowCount=0;
+function addTableRow(){tblRowCount++;const container=document.getElementById('tblRows');const row=document.createElement('div');row.className='tbl-row';row.id='tr'+tblRowCount;row.innerHTML=`<input placeholder="欄位名" class="tbl-key"><input placeholder="內容"><button class="tbl-del-btn" onclick="this.closest('.tbl-row').remove()">✕</button>`;container.appendChild(row);}
+
+/* size */
+function insertSize(s){const txt=savedSel.text||'文字';if(savedSel.text){wrapSel('size',s);}else{insertAtCursor(`[size=${s}]${txt}[/size]`);}closeModal();}
+
+/* color */
+let selectedColor='#f0b429';
+function selectColor(c){selectedColor=c;document.getElementById('colorVal').textContent=c;document.getElementById('colorVal').style.color=c;const prev=document.getElementById('colorPreview');if(prev){if(colorModalTag==='color')prev.style.color=c;else prev.style.background=c;}document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));const sw=document.querySelector(`.color-swatch[title="${c}"]`);if(sw)sw.classList.add('active');}
+
+/* youtube preview */
+function prevYT(type){const v=document.getElementById('f1').value;const id=extractYTId(v);const prev=document.getElementById('ytPrev');const err=document.getElementById('ytErr');const embed=document.getElementById('ytEmbed');if(!v.trim()){prev.textContent='';err.textContent='';embed.innerHTML='';return;}if(id){prev.textContent=`✅ ID：${id} → [${type}]${id}[/${type}]`;err.textContent='';embed.innerHTML=`<iframe class="yt-embed" src="https://www.youtube.com/embed/${id}" allowfullscreen loading="lazy"></iframe>`;}else{prev.textContent='';err.textContent='❌ 無法解析影片 ID，請確認網址';embed.innerHTML='';}}
+function prevTT(){const v=document.getElementById('f1').value;const id=extractTTId(v);const prev=document.getElementById('ttPrev');const err=document.getElementById('ttErr');if(!v.trim()){prev.textContent='';err.textContent='';return;}if(id){prev.textContent=`✅ ID：${id} → [xtiktok]${id}[/xtiktok]`;err.textContent='';}else{prev.textContent='';err.textContent='❌ 無法解析 TikTok ID，請確認網址';}}
+function prevImg(){const v=document.getElementById('f1').value.trim();const d=document.getElementById('imgPrev');if(!v){d.innerHTML='';return;}d.innerHTML=`<img src="${v}" style="max-width:100%;max-height:160px;border-radius:5px;" onerror="this.style.display='none'">`;}
+function prevPostimg(){
+  const el=document.getElementById('piUrl');
+  const v=el?el.value.trim():'';
+  const err=document.getElementById('piErr');
+  const imgp=document.getElementById('piImgPrev');
+  if(!v){err.textContent='';imgp.innerHTML='';return;}
+
+  const m=v.match(/\[url=([^\]]+)\]\[img\]([^\[]+)\[\/img\]\[\/url\]/);
+  if(m){
+    const imgSrc=m[2].trim();
+    err.textContent='';
+    imgp.innerHTML=`<div style="font-size:11px;color:#22c55e;margin-bottom:6px;">✅ 格式正確，可以插入</div><img src="${imgSrc}" style="max-width:100%;max-height:180px;border-radius:6px;display:block;" onerror="this.style.display='none'">`;
+  } else {
+    err.textContent='❌ 格式不符，請貼上 Postimages「論壇外連」的完整代碼，格式為 [url=...][img]...[/img][/url]';
+    imgp.innerHTML='';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   CONFIRM INSERT
+═══════════════════════════════════════════ */
+function confirmInsert(){
+  let code='';
+  const g=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
+
+  switch(currentTag){
+    case 'xgold':case 'xcenter':case 'xgban':case 'xnote':case 'xwarn':case 'xblue':case 'xgreen':case 'xred':case 'xinfo':case 'xglass':case 'xtag':
+      code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
+    case 'xcard': code=`[xcard=${g('f1')}]${g('f2')}[/xcard]\n`;break;
+    case 'quote':case 'xquote': code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
+    case 'xrate': code=`[xrate]${g('f1')}[/xrate]\n`;break;
+    case 'xbtn': code=`[xbtn=${g('f1')}]${g('f2')}[/xbtn]\n`;break;
+    case 'xyoutube':case 'xsyoutube':{const id=extractYTId(g('f1'));if(!id){showToast('❌ 無法解析 YouTube ID');return;}code=`[${currentTag}]${id}[/${currentTag}]\n`;break;}
+    case 'xtiktok':{const id=extractTTId(g('f1'));if(!id){showToast('❌ 無法解析 TikTok ID');return;}code=`[xtiktok]${id}[/xtiktok]\n`;break;}
+    case 'xmp4':case 'xvmp4': code=`[${currentTag}]${g('f1')}[/${currentTag}]\n`;break;
+    case 'xmp3': code=`[xmp3]${g('f1')}[/xmp3]\n`;break;
+    case 'xsound': code=`[xsound]${g('f1')}[/xsound]\n`;break;
+    case 'xsendvid':{const id=extractSendvidId(g('f1'));if(!id){showToast('❌ 無法解析 Sendvid ID');return;}code=`[xsendvid]${id}[/xsendvid]\n`;break;}
+    case 'xmap': code=`[xmap]${g('f1')}[/xmap]\n`;break;
+    case 'xmaplink': code=`[xmaplink]${g('f1')}[/xmaplink]\n`;break;
+    case 'ximg':{const url=g('f1');if(url)addToGallery(url,'img');code=`[ximg]${url}[/ximg]\n`;break;}
+    case 'postimages':{
+      const el=document.getElementById('piUrl');
+      const raw=el?el.value.trim():'';
+      if(!raw){showToast('❌ 請貼上論壇外連代碼');return;}
+      const m=raw.match(/\[url=([^\]]+)\]\[img\]([^\[]+)\[\/img\]\[\/url\]/);
+      if(!m){showToast('❌ 格式不符，請貼上論壇外連代碼');return;}
+      addToGallery(m[2].trim(),'img');
+      code=raw+'\n';
+      break;}
+    case 'dialog': code=`[xleft]${g('f1')}[/xleft][xright]${g('f2')}[/xright]\n`;break;
+    case 'xtable':{
+      const head=g('tblHead');
+      const rows=[...document.querySelectorAll('#tblRows .tbl-row')].map(r=>{const inputs=r.querySelectorAll('input');return{k:inputs[0].value.trim(),v:inputs[1].value.trim()};}).filter(r=>r.k||r.v);
+      code=`[xthead]${head}[/xthead]\n`+rows.map(r=>`[xtr=${r.k}]${r.v}[/xtr]`).join('\n')+'\n';break;}
+    case 'hide':{const num=g('f1');const type=g('f2');const content=g('f3');code=`[hide=${num},${type}]${content}[/hide]\n`;break;}
+    case 'size':{const s=g('f1');if(!s){closeModal();return;}const txt=savedSel.text||'文字';code=`[size=${s}]${txt}[/size]`;break;}
+    case 'colorpicker':{const c=selectedColor;const txt=savedSel.text||'文字';code=`[${colorModalTag}=${c}]${txt}[/${colorModalTag}]`;break;}
+  }
+  if(code){insertAtCursor(code);showToast(t('insert_ok'));}
+  closeModal();
+}
+
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
+function closeModalOverlay(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeModal();
+  if(e.key==='Enter'&&document.getElementById('modalOverlay').classList.contains('active')){
+    const a=document.activeElement;
+    if(a&&a.tagName!=='TEXTAREA'&&a.tagName!=='SELECT'&&!a.classList.contains('tbl-add-btn')&&a.id!=='modalOK'){e.preventDefault();confirmInsert();}
+  }
+});
+
+/* ═══════════════════════════════════════════
+   PREVIEW RENDERER
+═══════════════════════════════════════════ */
+function updatePreview(){
+  let h=editor.value;
+  // basic format
+  h=h.replace(/\[b\]([\s\S]*?)\[\/b\]/g,'<b>$1</b>');
+  h=h.replace(/\[i\]([\s\S]*?)\[\/i\]/g,'<i>$1</i>');
+  h=h.replace(/\[u\]([\s\S]*?)\[\/u\]/g,'<u>$1</u>');
+  h=h.replace(/\[strike\]([\s\S]*?)\[\/strike\]/g,'<s>$1</s>');
+  h=h.replace(/\[size=(\d+)\]([\s\S]*?)\[\/size\]/g,(_,s,c)=>`<span style="font-size:${8+parseInt(s)*2}px">${c}</span>`);
+  h=h.replace(/\[color=(#[0-9a-fA-F]{3,8}|[a-z]+)\]([\s\S]*?)\[\/color\]/g,'<span style="color:$1">$2</span>');
+  h=h.replace(/\[backcolor=(#[0-9a-fA-F]{3,8}|[a-z]+)\]([\s\S]*?)\[\/backcolor\]/g,'<span style="background:$1;padding:0 2px;">$2</span>');
+  h=h.replace(/\[align=center\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:center">$1</div>');
+
+  // [url=LINK][img]LINK[/img][/url] — Postimages 論壇外連，最優先
+  h=h.replace(/\[url=([^\]]+)\]\[img\]([\s\S]*?)\[\/img\]\[\/url\]/g,
+    (_,href,src)=>`<a href="${href}" target="_blank"><img class="forum-img" src="${src.trim()}" onerror="this.style.display='none'"></a>`);
+  h=h.replace(/\[url=([^\]]+)\]\[ximg\]([\s\S]*?)\[\/ximg\]\[\/url\]/g,
+    (_,href,src)=>`<a href="${href}" target="_blank"><img class="forum-img" src="${src.trim()}" onerror="this.style.display='none'"></a>`);
+  // plain url
+  h=h.replace(/\[url\]([\s\S]*?)\[\/url\]/g,'<a href="$1" style="color:#3b82f6" target="_blank">$1</a>');
+  h=h.replace(/\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/g,'<a href="$1" style="color:#3b82f6" target="_blank">$2</a>');
+
+  // xhr
+  h=h.replace(/\[xhr\]x\[\/xhr\]/g,'<hr class="xhr-line">');
+
+  // block map (simple wrap tags)
+  const bm=[
+    ['xgold',c=>`<div class="xgold-box">${c}</div>`],
+    ['xcenter',c=>`<div class="xcenter-box">${c}</div>`],
+    ['xgban',c=>`<div class="xgban-box">${c}</div>`],
+    ['xnote',c=>`<div class="xnote-box">${c}</div>`],
+    ['xwarn',c=>`<div class="xwarn-box">${c}</div>`],
+    ['xblue',c=>`<div class="xblue-box">${c}</div>`],
+    ['xgreen',c=>`<div class="xgreen-box">${c}</div>`],
+    ['xred',c=>`<div class="xred-box">${c}</div>`],
+    ['xinfo',c=>`<div class="xinfo-box">${c}</div>`],
+    ['xglass',c=>`<div class="xglass-box">${c}</div>`],
+    ['xquote',c=>`<div class="xquote-box">${c}</div>`],
+    ['quote',c=>`<div class="quote-box">${c}</div>`],
+    ['xtag',c=>`<span class="xtag-pill">${c}</span>`],
+    ['xrate',c=>`<span class="xrate-badge">★ ${c} / 10</span>`],
+    ['ximg',c=>`<img class="forum-img" src="${c}" onerror="this.style.display='none'">`],
+    ['img',c=>`<img class="forum-img" src="${c}" onerror="this.style.display='none'">`],
+    ['xmp4',c=>`<video class="forum-img" controls style="max-width:100%;border-radius:6px;margin:4px 0;"><source src="${c}" type="video/mp4">MP4: ${c}</video>`],
+    ['xvmp4',c=>`<video class="forum-img" controls style="max-width:320px;border-radius:6px;margin:4px 0;"><source src="${c}" type="video/mp4">MP4: ${c}</video>`],
+    ['xmp3',c=>`<audio controls style="width:100%;margin:6px 0;"><source src="${c}" type="audio/mpeg">MP3: ${c}</audio>`],
+    ['xsound',c=>`<div class="media-ph">🔊 SoundCloud：<a href="${c}" target="_blank" style="color:#3b82f6">${c}</a></div>`],
+    ['xmaplink',c=>`<div class="media-ph">📍 <a href="https://www.google.com/maps/search/${encodeURIComponent(c)}" target="_blank" style="color:#3b82f6">🗺 在 Google Maps 搜尋「${c}」</a></div>`],
+    ['xmap',c=>`<div class="media-ph">🗺 <a href="https://www.google.com/maps?q=${encodeURIComponent(c)}" target="_blank" style="color:#3b82f6">在 Google Maps 查看座標 ${c}</a></div>`],
+  ];
+  for(const [tag,fn] of bm){
+    h=h.replace(new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`,'g'),(_,c)=>fn(c.trim()));
+  }
+
+  // YouTube embed (actual iframe preview)
+  h=h.replace(/\[xyoutube\]([\s\S]*?)\[\/xyoutube\]/g,
+    (_,id)=>`<iframe class="yt-embed" src="https://www.youtube.com/embed/${id.trim()}" allowfullscreen loading="lazy"></iframe>`);
+  h=h.replace(/\[xsyoutube\]([\s\S]*?)\[\/xsyoutube\]/g,
+    (_,id)=>`<iframe style="width:100%;aspect-ratio:9/16;max-height:480px;border-radius:6px;border:none;margin:6px 0;display:block;" src="https://www.youtube.com/embed/${id.trim()}" allowfullscreen loading="lazy"></iframe>`);
+
+  // TikTok (no embed API, show link)
+  h=h.replace(/\[xtiktok\]([\s\S]*?)\[\/xtiktok\]/g,
+    (_,id)=>`<div class="media-ph">🎶 TikTok：<a href="https://www.tiktok.com/video/${id.trim()}" target="_blank" style="color:#3b82f6">影片 ID: ${id.trim()}</a></div>`);
+
+  // Sendvid embed
+  h=h.replace(/\[xsendvid\]([\s\S]*?)\[\/xsendvid\]/g,
+    (_,id)=>`<iframe src="https://sendvid.com/embed/${id.trim()}" style="width:100%;aspect-ratio:16/9;border-radius:6px;border:none;margin:6px 0;display:block;" allowfullscreen loading="lazy"></iframe>`);
+
+  // xcard
+  h=h.replace(/\[xcard=([^\]]+)\]([\s\S]*?)\[\/xcard\]/g,
+    (_,t_,b)=>`<div class="xcard-box"><div class="xcard-title">${t_}</div><div class="xcard-body">${b.trim()}</div></div>`);
+  // xbtn
+  h=h.replace(/\[xbtn=([^\]]+)\]([\s\S]*?)\[\/xbtn\]/g,
+    (_,url,text)=>`<a class="xbtn-link" href="${url}" target="_blank">${text.trim()}</a>`);
+
+  // dialog
+  h=h.replace(/\[xleft\]([\s\S]*?)\[\/xleft\]\s*\[xright\]([\s\S]*?)\[\/xright\]/g,
+    (_,l,r)=>`<div class="dialog-container"><div class="xleft-bubble"><span>${l.trim()}</span></div><div class="xright-bubble"><span>${r.trim()}</span></div></div>`);
+  h=h.replace(/\[xleft\]([\s\S]*?)\[\/xleft\]/g,(_,c)=>`<div class="xleft-bubble"><span>${c.trim()}</span></div>`);
+  h=h.replace(/\[xright\]([\s\S]*?)\[\/xright\]/g,(_,c)=>`<div class="xright-bubble"><span>${c.trim()}</span></div>`);
+
+  // table
+  h=h.replace(/\[xthead\]([\s\S]*?)\[\/xthead\]((?:\s*\[xtr=[^\]]+\][\s\S]*?\[\/xtr\])*)/g,(_,head,rest)=>{
+    const rows=[...rest.matchAll(/\[xtr=([^\]]+)\]([\s\S]*?)\[\/xtr\]/g)].map(([,k,v])=>`<tr><th>${k}</th><td>${v}</td></tr>`).join('');
+    return `<table class="xtable"><tr><th colspan="2">${head.trim()}</th></tr>${rows}</table>`;
+  });
+  h=h.replace(/\[xtr=[^\]]+\][\s\S]*?\[\/xtr\]/g,'');
+
+  // hide
+  const hideTypes={'1':'發文數','2':'超激值','3':'回應好評度','4':'發文好評度','5':'熱心好評度','6':'歲月值'};
+  h=h.replace(/\[hide=(\d+),(\d+)\]([\s\S]*?)\[\/hide\]/g,(_,num,type)=>`<div class="hide-box">🔒 需要 ${num} ${hideTypes[type]||'歲月值'} 才能觀看</div>`);
+  h=h.replace(/\[hide=(\d+)\]([\s\S]*?)\[\/hide\]/g,(_,num)=>`<div class="hide-box">🔒 需要 ${num} 歲月值 才能觀看</div>`);
+
+  // newline
+  h=h.replace(/\n/g,'<br>');
+  document.getElementById('preview').innerHTML=h||'<p style="color:#aaa;font-size:13px;text-align:center;margin-top:50px;">← 從左側選擇標籤開始</p>';
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+buildLeftPanel();
+pushUndo('');
+</script>
+</body>
+</html>
