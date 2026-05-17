@@ -664,8 +664,9 @@ function openModal(tag){
     case 'xgold':case 'xcenter':case 'xgban':case 'xnote':case 'xwarn':case 'xblue':case 'xgreen':case 'xred':case 'xinfo':case 'xglass':
       html=`<label>內容</label><input id="f1" value="${esc(selVal)}" placeholder="輸入內容">`;break;
     case 'xspoiler':
-      html=`<label>按鈕文字（點擊後展開）</label><input id="f1" placeholder="例：點我查看" value="點我查看">
-      <label>劇透內容</label><textarea id="f2">${esc(selVal)}</textarea>`;break;
+      html=`<div style="font-size:11px;color:var(--gold);background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.25);border-radius:6px;padding:7px 11px;margin-bottom:10px;">💡 可隱藏劇透文字及圖片，影片及加密內容無法使用</div>
+      <label>按鈕文字（點擊後展開）</label><input id="f1" placeholder="例：點我查看" value="點我查看">
+      <label>劇透內容（文字或圖片BBCode）</label><textarea id="f2">${esc(selVal)}</textarea>`;break;
     case 'xsmall':
       html=`<label>小字補充內容</label><input id="f1" value="${esc(selVal)}" placeholder="例：資料來源：會員自行整理，僅供參考。">`;break;
     case 'xcard':
