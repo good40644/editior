@@ -300,8 +300,7 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
     <button class="fmt-btn" onclick="wrapFmt('align','center')" title="置中">≡</button>
     <button class="fmt-btn" onclick="wrapFmt('align','right')" title="右對齊">➡</button>
     <div class="fmt-sep"></div>
-    <button class="fmt-btn" onclick="insertAtCursor('[hr]
-')" title="水平分隔線">—</button>
+    <button class="fmt-btn" onclick="insertAtCursor('[hr]\n')" title="分隔線（細灰色）">分隔線</button>
     <button class="fmt-btn" onclick="wrapFmt('code')" title="程式碼（原樣顯示）">&lt;/&gt;</button>
     <button class="fmt-btn" onclick="wrapFmt('url')" title="超連結">🔗</button>
   </div>
@@ -569,10 +568,10 @@ function buildLeftPanel(){
       {tag:'xblue',icon:'🔵',label:lang==='zh'?'技術提示（藍）':'Info (Blue)',code:'xblue',wrap:true},
       {tag:'xgreen',icon:'✅',label:lang==='zh'?'成功訊息（綠）':'Success (Green)',code:'xgreen',wrap:true},
       {tag:'xred',icon:'🚫',label:lang==='zh'?'禁止事項（紅）':'Forbidden (Red)',code:'xred',wrap:true},
-      {tag:'xinfo',icon:'ℹ️',label:lang==='zh'?'資訊框（藍）':'Info Box (Blue)',code:'xinfo',wrap:true},
+      {tag:'xinfo',icon:'ℹ️',label:lang==='zh'?'蘋果藍資訊框':'Apple Blue Info',code:'xinfo',wrap:true},
       {tag:'xgold',icon:'🏅',label:lang==='zh'?'金色標題條':'Gold Title',code:'xgold',wrap:true},
       {tag:'xspoiler',icon:'🔽',label:lang==='zh'?'劇透文字':'Spoiler',code:'xspoiler',modal:true},
-      {tag:'xglass',icon:'🪟',label:lang==='zh'?'玻璃風格':'Glass Style',code:'xglass',wrap:true},
+      {tag:'xglass',icon:'🪟',label:lang==='zh'?'蘋果灰玻璃感':'Apple Glass',code:'xglass',wrap:true},
       {tag:'xcard',icon:'🃏',label:lang==='zh'?'卡片':'Card',code:'xcard',modal:true},
     ]},
     {key:'quote',title:lang==='zh'?'💬 引用':'💬 Quote',tags:[
@@ -648,7 +647,7 @@ function openModal(tag){
 
   const titles={
     xgold:'🏷 章節標題',xcenter:'⬛ 置中標題',xgban:'🟨 金色橫幅',
-    xnote:'📌 重點框',xwarn:'⚠️ 警告框',xblue:'🔵 技術提示',xgreen:'✅ 成功訊息',xred:'🚫 禁止事項',xinfo:'ℹ️ 資訊框',xglass:'🪟 玻璃風格框',
+    xnote:'📌 重點框',xwarn:'⚠️ 警告框',xblue:'🔵 技術提示',xgreen:'✅ 成功訊息',xred:'🚫 禁止事項',xinfo:'ℹ️ 蘋果藍資訊框',xglass:'🪟 蘋果灰玻璃感',
     xcard:'🃏 卡片',quote:'「」引用框 type2（框格）',xquote:'｜引用框 type1（斜體）',
     xtag:'🔖 標籤',xrate:'⭐ 評分',xbtn:'🔘 按鈕連結',
     xyoutube:'▶️ YouTube 長影片',xsyoutube:'📱 YouTube直立影片',xmp4:'🎥 MP4 影片',xvmp4:'📹 直立 MP4',xmp3:'🎵 MP3 音樂',xtiktok:'🎶 TikTok',xsound:'🔊 SoundCloud',xsendvid:'📺 Sendvid 影片',xmap:'🗺 地圖座標（xmap）',xmaplink:'📍 地點名稱（xmaplink）',
@@ -696,7 +695,8 @@ function openModal(tag){
     case 'xsound':
       html=`<label>SoundCloud 連結</label><input id="f1" placeholder="https://soundcloud.com/...">`; break;
     case 'xsendvid':
-      html=`<label>貼上 Sendvid 網址或影片 ID</label>
+      html=`<div style="margin-bottom:8px;"><button class="postimg-open-btn" onclick="window.open('https://sendvid.com/','_blank')">🔗 前往 Sendvid 上傳</button></div>
+      <label>貼上 Sendvid 網址或影片 ID</label>
       <input id="f1" placeholder="https://sendvid.com/8ayyh3m4 或 8ayyh3m4" oninput="prevSendvid()">
       <div id="svPrev" style="margin-top:6px;font-size:11px;min-height:14px;font-family:'JetBrains Mono',monospace;color:#22c55e;word-break:break-all;"></div>
       <div id="svErr" style="font-size:11px;color:#ef4444;min-height:14px;"></div>
@@ -1036,7 +1036,7 @@ function updatePreview(){
   h=h.replace(/\[align=left\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:left">$1</div>');
   h=h.replace(/\[align=center\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:center">$1</div>');
   h=h.replace(/\[align=right\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:right">$1</div>');
-  h=h.replace(/\[hr\]/g,'<hr style="border:none;border-top:1px solid #ccc;margin:10px 0;">');
+  h=h.replace(/\[hr\]/g,'<hr style="border:none;border-top:1px solid #ccc;margin:10px 0;opacity:.7;">');
   h=h.replace(/\[code\]([\s\S]*?)\[\/code\]/g,'<pre style="background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:10px;font-family:monospace;font-size:12px;white-space:pre-wrap;overflow-x:auto;">$1</pre>');
 
   // [url=LINK][img]LINK[/img][/url] — Postimages 論壇外連，最優先
