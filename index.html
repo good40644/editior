@@ -279,7 +279,12 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 <div class="panel-mid">
   <div class="panel-header">
     <h3 data-i18n="editor">✏️ 編輯器</h3>
-    <button class="btn btn-ghost" onclick="clearEditor()" data-i18n="clear">清空</button>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-ghost" id="splitMergeBtn" onclick="toggleSplitMerge()" title="分欄/合併預覽欄">合併</button>
+      <button class="btn btn-ghost" id="previewToggleBtn" onclick="showMergedPreview()" title="預覽文章效果" style="display:none;">預覽</button>
+      <button class="btn btn-ghost" onclick="stripBBCode()" title="移除所有BBCode，只保留文字">清除語法</button>
+      <button class="btn btn-ghost" onclick="clearEditor()" data-i18n="clear">清空</button>
+    </div>
   </div>
 
   <!-- 格式工具列 -->
@@ -305,7 +310,7 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
     <button class="fmt-btn" onclick="wrapFmt('url')" title="超連結">🔗</button>
   </div>
 
-  <div id="selectionBar">✨ <span data-i18n="selActive">已選取文字 — 點左側標籤可包裹</span></div>
+  <div id="selectionBar">✨ <span data-i18n="selActive">已選取文字 — 點選功能鍵可包裹</span></div>
   <textarea id="editor"
     placeholder="點功能按鈕插入 BBCode，或直接輸入..."
     oninput="onEditorInput()"
@@ -351,7 +356,7 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 ═══════════════════════════════════════════ */
 let lang = 'zh';
 const i18n = {
-  zh:{subtitle:'',selHint:'💡 <b>選取文字</b>後按功能鍵可包裹標籤',undo:'復原',save:'另存新檔',copyAll:'複製全部',editor:'✏️ 編輯器',clear:'清空',selActive:'已選取文字 — 點左側標籤可包裹',preview:'👁 論壇預覽',previewHint:'← 從左側選擇標籤開始',refresh:'重新預覽',cancel:'取消',insert:'插入',charUnit:'字元',zhUnit:'中文：',insert_ok:'✅ 已插入！',copied:'✅ 已複製到剪貼簿！',saved:'✅ 已儲存為文字檔！',cleared:'已清空',confirmClear:'確定要清空編輯器嗎？'},
+  zh:{subtitle:'',selHint:'💡 <b>選取文字</b>後按功能鍵可包裹標籤',undo:'復原',save:'另存新檔',copyAll:'複製全部',editor:'✏️ 編輯器',clear:'清空',selActive:'已選取文字 — 點選功能鍵可包裹',preview:'👁 論壇預覽',previewHint:'← 從左側選擇標籤開始',refresh:'重新預覽',cancel:'取消',insert:'插入',charUnit:'字元',zhUnit:'中文：',insert_ok:'✅ 已插入！',copied:'✅ 已複製到剪貼簿！',saved:'✅ 已儲存為文字檔！',cleared:'已清空',confirmClear:'確定要清空編輯器嗎？'},
   en:{subtitle:'',selHint:'💡 <b>Select text</b> then click a tag to wrap',undo:'Undo',save:'Save As',copyAll:'Copy All',editor:'✏️ Editor',clear:'Clear',selActive:'Text selected — click a tag to wrap',preview:'👁 Preview',previewHint:'← Select a tag from the left',refresh:'Refresh',cancel:'Cancel',insert:'Insert',charUnit:' chars',zhUnit:'CJK: ',insert_ok:'✅ Inserted!',copied:'✅ Copied to clipboard!',saved:'✅ Saved as text file!',cleared:'Cleared',confirmClear:'Clear the editor?'}
 };
 function t(k){return i18n[lang][k]||k;}
@@ -456,16 +461,72 @@ function renderGallery(container){
 ═══════════════════════════════════════════ */
 const editor=document.getElementById('editor');
 let savedSel={start:0,end:0,text:''};
-function checkSel(){const s=editor.selectionStart,e=editor.selectionEnd,has=s!==e;savedSel=has?{start:s,end:e,text:editor.value.slice(s,e)}:{start:s,end:e,text:''};document.body.classList.toggle('has-selection',has);document.getElementById('selectionBar').classList.toggle('visible',has);}
+
+function checkSel(){
+  // Always re-read live selection
+  const s=editor.selectionStart, e=editor.selectionEnd, has=s!==e;
+  if(has){
+    savedSel={start:s,end:e,text:editor.value.slice(s,e)};
+  } else {
+    // Only clear if we truly have no selection
+    if(document.activeElement===editor){
+      savedSel={start:s,end:e,text:''};
+    }
+  }
+  document.body.classList.toggle('has-selection',has);
+  document.getElementById('selectionBar').classList.toggle('visible',has);
+}
+
+// Re-read live selection right before wrapping (fixes mobile select-all bug)
+function getLiveSel(){
+  const s=editor.selectionStart, e=editor.selectionEnd;
+  if(s!==e) return {start:s,end:e,text:editor.value.slice(s,e)};
+  return savedSel;
+}
 
 /* ═══════════════════════════════════════════
    INSERT / WRAP
 ═══════════════════════════════════════════ */
 function insertAtCursor(txt){pushUndo(editor.value);const s=editor.selectionStart,e=editor.selectionEnd;editor.value=editor.value.slice(0,s)+txt+editor.value.slice(e);editor.selectionStart=editor.selectionEnd=s+txt.length;editor.focus();updatePreview();updateStats();}
-function wrapSel(tag,attr){const{start,end,text}=savedSel;const open=attr?`[${tag}=${attr}]`:`[${tag}]`;const close=`[/${tag}]`;pushUndo(editor.value);const wrapped=open+text+close;editor.value=editor.value.slice(0,start)+wrapped+editor.value.slice(end);editor.selectionStart=start;editor.selectionEnd=start+wrapped.length;editor.focus();savedSel={start:0,end:0,text:''};document.body.classList.remove('has-selection');document.getElementById('selectionBar').classList.remove('visible');updatePreview();updateStats();}
+function wrapSel(tag,attr){
+  // Always use live selection at moment of click
+  const live=getLiveSel();
+  if(!live.text) return;
+  const{start,end,text}=live;
+  const open=attr?`[${tag}=${attr}]`:`[${tag}]`;
+  const close=`[/${tag}]`;
+  pushUndo(editor.value);
+  const wrapped=open+text+close;
+  editor.value=editor.value.slice(0,start)+wrapped+editor.value.slice(end);
+  // Keep selection on the wrapped content so user can chain more wraps
+  editor.selectionStart=start;
+  editor.selectionEnd=start+wrapped.length;
+  editor.focus();
+  // Update savedSel to the new wrapped content (for chaining multiple wraps)
+  savedSel={start:start,end:start+wrapped.length,text:wrapped};
+  // Keep selection bar visible so user can keep wrapping
+  document.body.classList.add('has-selection');
+  document.getElementById('selectionBar').classList.add('visible');
+  updatePreview();updateStats();
+}
 const directWrap=['xgold','xcenter','xgban','xnote','xwarn','xblue','xgreen','xred','xinfo','xglass','xsmall','quote','xquote','xtag','b','i','u','strike'];
-function wrapOrModal(tag){if(savedSel.text&&directWrap.includes(tag)){wrapSel(tag);}else{openModal(tag);}}
-function wrapFmt(tag,attr){if(savedSel.text){wrapSel(tag,attr);}else{const cursor=`[${tag}${attr?'='+attr:''}][/${tag}]`;insertAtCursor(cursor);const pos=editor.selectionStart-(tag.length+3+(attr?attr.length+1:0));editor.selectionStart=editor.selectionEnd=pos;}}
+function wrapOrModal(tag){
+  const live=getLiveSel();
+  if(live.text&&directWrap.includes(tag)){wrapSel(tag);}
+  else{openModal(tag);}
+}
+function wrapFmt(tag,attr){
+  const live=getLiveSel();
+  if(live.text){
+    wrapSel(tag,attr);
+  } else {
+    const cursor=`[${tag}${attr?'='+attr:''}][/${tag}]`;
+    insertAtCursor(cursor);
+    // Move cursor inside the tags
+    const pos=editor.selectionStart-(tag.length+3+(attr?attr.length+1:0));
+    editor.selectionStart=editor.selectionEnd=pos;
+  }
+}
 
 /* ═══════════════════════════════════════════
    STATS
@@ -496,6 +557,84 @@ async function saveFile(){
   showToast(t('saved'));
 }
 function copyCode(){if(!editor.value.trim())return;navigator.clipboard.writeText(editor.value).then(()=>showToast(t('copied')));}
+/* ═══════════════════════════════════════════
+   SPLIT / MERGE VIEW
+═══════════════════════════════════════════ */
+let isMerged = false;
+
+function toggleSplitMerge(){
+  isMerged = !isMerged;
+  const panelRight = document.querySelector('.panel-right');
+  const main = document.querySelector('.main');
+  const splitBtn = document.getElementById('splitMergeBtn');
+  const previewBtn = document.getElementById('previewToggleBtn');
+
+  if(isMerged){
+    // Merged: hide right panel, editor takes full width
+    panelRight.style.display = 'none';
+    main.style.gridTemplateColumns = '240px 1fr';
+    splitBtn.textContent = '分欄';
+    previewBtn.style.display = '';
+    // Mobile: single column
+    if(window.innerWidth <= 768){
+      main.style.gridTemplateColumns = '1fr';
+    }
+  } else {
+    // Split: show right panel again
+    panelRight.style.display = '';
+    main.style.gridTemplateColumns = '240px 1fr 1fr';
+    splitBtn.textContent = '合併';
+    previewBtn.style.display = 'none';
+    // Hide overlay preview if open
+    const overlay = document.getElementById('previewOverlay');
+    if(overlay) overlay.style.display = 'none';
+    if(window.innerWidth <= 768){
+      main.style.gridTemplateColumns = '1fr';
+    }
+  }
+}
+
+function showMergedPreview(){
+  // Show a fullscreen overlay with the preview content
+  let overlay = document.getElementById('previewOverlay');
+  if(!overlay){
+    overlay = document.createElement('div');
+    overlay.id = 'previewOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:300;display:flex;flex-direction:column;overflow:hidden;';
+    overlay.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f5f5f0;border-bottom:1px solid #ddd;flex-shrink:0;">
+        <span style="font-size:13px;font-weight:600;color:#666;">👁 論壇預覽</span>
+        <button onclick="document.getElementById('previewOverlay').style.display='none'" style="background:#e0e0e0;border:none;border-radius:6px;padding:5px 14px;font-size:12px;cursor:pointer;font-family:inherit;">✕ 關閉</button>
+      </div>
+      <div id="previewOverlayBody" style="flex:1;overflow-y:auto;padding:18px 22px;font-family:'Noto Sans TC',sans-serif;font-size:14px;line-height:1.8;color:#333;"></div>
+    `;
+    document.body.appendChild(overlay);
+  }
+  // Copy current preview content
+  document.getElementById('previewOverlayBody').innerHTML = document.getElementById('preview').innerHTML;
+  overlay.style.display = 'flex';
+}
+
+// Init: on mobile, start in merged mode automatically
+window.addEventListener('DOMContentLoaded',()=>{
+  if(window.innerWidth <= 768){
+    // auto-merge on mobile for better UX
+    setTimeout(toggleSplitMerge, 50);
+  }
+});
+
+function stripBBCode(){
+  if(!editor.value.trim()) return;
+  pushUndo(editor.value);
+  // Remove all BBCode tags including those with attributes
+  let v = editor.value;
+  // Remove [tag=...] and [/tag] patterns
+  v = v.replace(/\[\/?\w[\w]*(?:=[^\]]+)?\]/g, '');
+  editor.value = v;
+  updatePreview(); updateStats();
+  showToast('✅ 已清除所有 BBCode 語法');
+}
+
 function clearEditor(){if(editor.value&&confirm(t('confirmClear'))){pushUndo(editor.value);editor.value='';updatePreview();updateStats();savedSel={start:0,end:0,text:''}; document.body.classList.remove('has-selection');document.getElementById('selectionBar').classList.remove('visible');}}
 function showToast(msg){const t_=document.getElementById('toast');t_.textContent=msg;t_.classList.add('show');setTimeout(()=>t_.classList.remove('show'),2500);}
 
@@ -1026,6 +1165,14 @@ document.addEventListener('keydown',e=>{
 ═══════════════════════════════════════════ */
 function updatePreview(){
   let h=editor.value;
+  // Extract [code] blocks FIRST (before any other processing) to preserve literal content
+  const codePlaceholders=[];
+  h=h.replace(/\[code\]([\s\S]*?)\[\/code\]/g,(match,inner)=>{
+    const escaped=inner.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\[/g,'&#91;').replace(/\]/g,'&#93;');
+    const ph=`«code${codePlaceholders.length}»`;
+    codePlaceholders.push(`<pre style="background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:10px;font-family:monospace;font-size:12px;white-space:pre-wrap;overflow-x:auto;">${escaped}</pre>`);
+    return ph;
+  });
   // basic format
   h=h.replace(/\[b\]([\s\S]*?)\[\/b\]/g,'<b>$1</b>');
   h=h.replace(/\[i\]([\s\S]*?)\[\/i\]/g,'<i>$1</i>');
@@ -1038,7 +1185,7 @@ function updatePreview(){
   h=h.replace(/\[align=center\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:center">$1</div>');
   h=h.replace(/\[align=right\]([\s\S]*?)\[\/align\]/g,'<div style="text-align:right">$1</div>');
   h=h.replace(/\[hr\]/g,'<hr style="border:none;border-top:1px solid #ccc;margin:10px 0;opacity:.7;">');
-  h=h.replace(/\[code\]([\s\S]*?)\[\/code\]/g,'<pre style="background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:10px;font-family:monospace;font-size:12px;white-space:pre-wrap;overflow-x:auto;">$1</pre>');
+  // [code] handled at top of function
 
   // [url=LINK][img]LINK[/img][/url] — Postimages 論壇外連，最優先
   h=h.replace(/\[url=([^\]]+)\]\[img\]([\s\S]*?)\[\/img\]\[\/url\]/g,
@@ -1138,6 +1285,8 @@ function updatePreview(){
 
   // newline
   h=h.replace(/\n/g,'<br>');
+  // Restore [code] block placeholders
+  codePlaceholders.forEach((html,i)=>{h=h.replace(`«code${i}»`,html);});
   document.getElementById('preview').innerHTML=h||'<p style="color:#aaa;font-size:13px;text-align:center;margin-top:50px;">← 從左側選擇標籤開始</p>';
 }
 
