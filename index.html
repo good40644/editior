@@ -120,17 +120,19 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 .postimg-open-btn:hover{background:var(--gold2);}
 
 /* gallery */
-.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;max-height:300px;overflow-y:auto;padding-right:4px;}
-.gallery-grid::-webkit-scrollbar{width:4px;}
-.gallery-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-.gallery-item{position:relative;cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--bg);}
+.gallery-grid{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+.gallery-item{position:relative;cursor:pointer;border:2px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg);display:flex;align-items:flex-start;gap:0;transition:border-color .15s;}
 .gallery-item:hover{border-color:var(--gold);}
-.gallery-item img{width:100%;height:100%;object-fit:cover;display:block;}
-.gallery-item canvas{width:100%;height:100%;display:block;}
-.gallery-item .gal-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.75);color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;display:none;line-height:1.4;}
-.gallery-item:hover .gal-del{display:block;}
-.gallery-item .gal-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;padding:2px 4px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;text-align:center;}
-.gallery-empty{color:var(--text2);font-size:12px;text-align:center;padding:24px 10px;grid-column:1/-1;line-height:1.6;}
+.gallery-item .gal-thumb{flex-shrink:0;width:90px;height:90px;object-fit:cover;display:block;background:#111;}
+.gallery-item canvas.gal-thumb{width:90px;height:90px;display:block;background:#1a1a1a;}
+.gallery-item .gal-thumb-placeholder{flex-shrink:0;width:90px;height:90px;display:flex;align-items:center;justify-content:center;font-size:32px;background:#1a1a1a;}
+.gallery-item .gal-info{flex:1;padding:8px 10px;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.gallery-item .gal-info .gal-type{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);}
+.gallery-item .gal-info .gal-url{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text);word-break:break-all;line-height:1.4;opacity:.8;}
+.gallery-item .gal-info .gal-hint{font-size:10px;color:var(--gold);margin-top:auto;}
+.gallery-item .gal-del{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.8);color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1.4;}
+.gallery-item:hover .gal-del{opacity:1;}
+.gallery-empty{color:var(--text2);font-size:12px;text-align:center;padding:24px 10px;line-height:1.6;}
 /* color picker row */
 .color-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;}
 .color-swatch{width:22px;height:22px;border-radius:4px;border:2px solid transparent;cursor:pointer;transition:transform .15s;}
@@ -183,7 +185,6 @@ textarea#editor.dragging{
 #preview .media-ph{background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin:6px 0;font-size:12px;color:#888;text-align:center;}
 #preview img.forum-img{max-width:100%;border-radius:4px;margin:4px 0;display:block;}
 #preview .yt-embed{width:100%;aspect-ratio:16/9;border-radius:6px;border:none;margin:6px 0;}
-@keyframes flyText{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 
 /* ══════════════════════════════════════════
    MOBILE RESPONSIVE
@@ -319,9 +320,6 @@ textarea#editor.dragging{
     <button class="fmt-btn" onclick="insertAtCursor('[hr]\n')" title="分隔線（細灰色）">分隔線</button>
     <button class="fmt-btn" onclick="wrapFmt('code')" title="程式碼（原樣顯示）">&lt;/&gt;</button>
     <button class="fmt-btn" onclick="wrapFmt('url')" title="超連結">🔗</button>
-    <div class="fmt-sep"></div>
-    <button class="fmt-btn" onclick="wrapFmt('fly')" title="飛行文字效果">✈ 飛行</button>
-    <button class="fmt-btn" onclick="wrapFmt('move')" title="跑馬燈捲動效果">📜 跑馬燈</button>
   </div>
 
   <div id="selectionBar">✨ <span data-i18n="selActive">已選取文字 — 點選功能鍵可包裹</span></div>
@@ -445,39 +443,84 @@ let gallery=[];
 try{const saved=localStorage.getItem('liujin_gallery');if(saved)gallery=JSON.parse(saved);}catch(e){}
 function saveGallery(){try{localStorage.setItem('liujin_gallery',JSON.stringify(gallery.slice(0,50)));}catch(e){}}
 function addToGallery(url,type='img'){if(gallery.find(g=>g.url===url))return;gallery.unshift({url,type,ts:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);saveGallery();}
+function clearGallery(){
+  if(!gallery.length)return;
+  if(!confirm('確定要清空所有圖庫暫存嗎？此操作無法復原。'))return;
+  gallery=[];
+  saveGallery();
+  const grid=document.getElementById('galGrid');
+  if(grid)renderGallery(grid);
+  showToast('🗑 已清空圖庫');
+}
 function renderGallery(container){
   container.innerHTML='';
+  // Update counter badge if present
+  const counter=document.getElementById('galCounter');
+  if(counter)counter.textContent=`${gallery.length}/30`;
   if(!gallery.length){container.innerHTML='<div class="gallery-empty">尚無已儲存的圖片/影片連結<br><span style="font-size:10px;opacity:.7;">上傳或插入圖片/影片後會自動記錄</span></div>';return;}
   gallery.forEach((g,i)=>{
     const d=document.createElement('div');
     d.className='gallery-item';
-    const delBtn=`<button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);saveGallery();renderGallery(this.closest('.gallery-grid'))">✕</button>`;
+
+    // Build thumb
+    let thumbHtml='';
+    let typeLabel='';
+    let urlDisplay=g.url;
+    let bbInsert='';
+
     if(g.type==='img'){
-      const fname=g.url.split('/').pop().split('?')[0].slice(0,18);
-      d.innerHTML=`<img src="${g.url}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%25%22 height=%22100%25%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2212%22 fill=%22%23888%22 text-anchor=%22middle%22>!</text></svg>'">${delBtn}<div class="gal-label">${fname}</div>`;
-      d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
+      typeLabel='圖片';
+      bbInsert=`[ximg]${g.url}[/ximg]\n`;
+      thumbHtml=`<img class="gal-thumb" src="${g.url}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><rect fill=%22%23222%22 width=%22100%25%22 height=%22100%25%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2216%22 fill=%22%23666%22 text-anchor=%22middle%22>!</text></svg>'">`;
     } else if(g.type==='vid'){
-      d.style.position='relative';
-      const vidIdx=i;
-      const vfname=g.url.split('/').pop().split('?')[0].slice(0,18);
-      d.innerHTML=`<canvas id="galvc${vidIdx}" style="width:100%;height:100%;display:block;background:#1a1a1a;"></canvas><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;pointer-events:none;color:#fff;">▶</div>${delBtn}<div class="gal-label">${vfname}</div>`;
-      (function(url,idx){setTimeout(()=>{const cv=document.getElementById('galvc'+idx);if(!cv)return;const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.addEventListener('loadeddata',()=>{v.currentTime=0.5;});v.addEventListener('seeked',()=>{cv.width=80;cv.height=80;const ctx=cv.getContext('2d');ctx.drawImage(v,0,0,80,80);v.remove();});v.load();},120);})(g.url,i);
-      d.onclick=()=>{insertAtCursor(`[xmp4]${g.url}[/xmp4]
-`);closeModal()};
+      typeLabel='MP4 影片';
+      bbInsert=`[xmp4]${g.url}[/xmp4]\n`;
+      thumbHtml=`<canvas class="gal-thumb" id="galvc${i}" style="background:#1a1a1a;"></canvas>`;
+    } else if(g.type==='sendvid'){
+      typeLabel='Sendvid';
+      bbInsert=`[xsendvid]${g.url}[/xsendvid]\n`;
+      thumbHtml=`<div class="gal-thumb-placeholder" style="background:#0a1628;">📺</div>`;
     } else if(g.type==='yt'){
-      d.innerHTML=`<div style="width:100%;height:100%;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:26px;">▶️</span></div>${delBtn}<div class="gal-label">YT: ${g.url}</div>`;
-      d.onclick=()=>{insertAtCursor(`[xyoutube]${g.url}[/xyoutube]
-`);closeModal();};
+      typeLabel='YouTube';
+      bbInsert=`[xyoutube]${g.url}[/xyoutube]\n`;
+      thumbHtml=`<div class="gal-thumb-placeholder" style="background:#1a1a2e;">▶️</div>`;
     } else if(g.type==='tt'){
-      d.innerHTML=`<div style="width:100%;height:100%;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:26px;">🎶</span></div>${delBtn}<div class="gal-label">TT: ${g.url}</div>`;
-      d.onclick=()=>{insertAtCursor(`[xtiktok]${g.url}[/xtiktok]
-`);closeModal();};
+      typeLabel='TikTok';
+      bbInsert=`[xtiktok]${g.url}[/xtiktok]\n`;
+      thumbHtml=`<div class="gal-thumb-placeholder" style="background:#111;">🎶</div>`;
     } else {
-      d.innerHTML=`<div style="width:100%;height:100%;background:#222;display:flex;align-items:center;justify-content:center;font-size:20px;">📎</div>${delBtn}`;
-      d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
+      typeLabel='檔案';
+      bbInsert=`[ximg]${g.url}[/ximg]\n`;
+      thumbHtml=`<div class="gal-thumb-placeholder">📎</div>`;
     }
+
+    d.innerHTML=`
+      ${thumbHtml}
+      <div class="gal-info">
+        <div class="gal-type">${typeLabel}</div>
+        <div class="gal-url">${urlDisplay}</div>
+        <div class="gal-hint">點擊插入 BBCode</div>
+      </div>
+      <button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);saveGallery();renderGallery(document.getElementById('galGrid'))">✕</button>`;
+
     d.title=g.url;
+    d.onclick=()=>{insertAtCursor(bbInsert);closeModal();};
     container.appendChild(d);
+
+    // Async video thumbnail
+    if(g.type==='vid'){
+      (function(url,idx){
+        setTimeout(()=>{
+          const cv=document.getElementById('galvc'+idx);
+          if(!cv)return;
+          const v=document.createElement('video');
+          v.src=url;v.muted=true;v.playsInline=true;
+          v.addEventListener('loadeddata',()=>{v.currentTime=0.5;});
+          v.addEventListener('seeked',()=>{cv.width=90;cv.height=90;cv.getContext('2d').drawImage(v,0,0,90,90);v.remove();});
+          v.load();
+        },120);
+      })(g.url,i);
+    }
   });
 }
 
@@ -651,18 +694,10 @@ window.addEventListener('DOMContentLoaded',()=>{
 function stripBBCode(){
   if(!editor.value.trim()) return;
   pushUndo(editor.value);
+  // Remove all BBCode tags including those with attributes
   let v = editor.value;
-  // Whitelist of known BBCode tag names (including those with = attributes)
-  const knownTags = [
-    'b','i','u','strike','size','color','backcolor','align','hr','code','url',
-    'img','ximg','xmp4','xvmp4','xmp3','xsound','xyoutube','xsyoutube','xtiktok','xsendvid',
-    'xmap','xmaplink','xhr','xgold','xcenter','xgban','xnote','xwarn','xblue','xgreen',
-    'xred','xinfo','xglass','xsmall','xquote','quote','xtag','xrate','xbtn','xspoiler',
-    'xcard','xleft','xright','xthead','xtr','hide','fly','move'
-  ];
-  const tagPattern = knownTags.join('|');
-  // Match opening tags (with optional =value) and closing tags for known BBCode only
-  v = v.replace(new RegExp(`\\[\\/?(?:${tagPattern})(?:=[^\\]]+)?\\]`, 'gi'), '');
+  // Remove [tag=...] and [/tag] patterns
+  v = v.replace(/\[\/?\w[\w]*(?:=[^\]]+)?\]/g, '');
   editor.value = v;
   updatePreview(); updateStats();
   showToast('✅ 已清除所有 BBCode 語法');
@@ -919,8 +954,17 @@ function openModal(tag){
       setTimeout(()=>{ setCatboxType('img'); },30);
       break;
     case 'gallery':
-      html=`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;">點選圖片/影片可插入 BBCode。圖庫會儲存在此裝置，重新開啟仍可使用。</div><div class="gallery-grid" id="galGrid"></div>`;
-      document.getElementById('modalOK').style.display='none';break;
+      html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;">
+        <span style="font-size:11px;color:var(--text2);flex:1;">點選圖片/影片可插入 BBCode。圖庫會儲存最新30項在此裝置，重新開啟仍可使用。</span>
+        <span id="galCounter" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--gold);white-space:nowrap;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 8px;">0/30</span>
+      </div>
+      <div class="gallery-grid" id="galGrid"></div>
+      <div style="margin-top:10px;text-align:right;">
+        <button class="btn btn-ghost" style="font-size:11px;color:var(--red);border-color:var(--red);" onclick="clearGallery()">🗑 清空圖庫</button>
+      </div>`;
+      document.getElementById('modalOK').style.display='none';
+      document.getElementById('modalActions').style.display='none';
+      break;
     case 'dialog':
       html=`<div style="font-size:11px;color:var(--text2);margin-bottom:10px;">點「+ 新增對話」加入訊息，可選左側或右側，可自由刪除。</div>
       <div id="dialogRows" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;padding-right:4px;"></div>
@@ -1218,8 +1262,6 @@ function updatePreview(){
   h=h.replace(/\[i\]([\s\S]*?)\[\/i\]/g,'<i>$1</i>');
   h=h.replace(/\[u\]([\s\S]*?)\[\/u\]/g,'<u>$1</u>');
   h=h.replace(/\[strike\]([\s\S]*?)\[\/strike\]/g,'<s>$1</s>');
-  h=h.replace(/\[fly\]([\s\S]*?)\[\/fly\]/g,'<span style="display:inline-block;animation:flyText 3s linear infinite;white-space:nowrap;">$1</span>');
-  h=h.replace(/\[move\]([\s\S]*?)\[\/move\]/g,'<marquee scrollamount="3" style="display:block;white-space:nowrap;">$1</marquee>');
   h=h.replace(/\[size=(\d+)\]([\s\S]*?)\[\/size\]/g,(_,s,c)=>`<span style="font-size:${8+parseInt(s)*2}px">${c}</span>`);
   h=h.replace(/\[color=(#[0-9a-fA-F]{3,8}|[a-z]+)\]([\s\S]*?)\[\/color\]/g,'<span style="color:$1">$2</span>');
   h=h.replace(/\[backcolor=(#[0-9a-fA-F]{3,8}|[a-z]+)\]([\s\S]*?)\[\/backcolor\]/g,'<span style="background:$1;padding:0 2px;">$2</span>');
