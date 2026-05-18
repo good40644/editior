@@ -138,13 +138,7 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 .color-custom{width:32px;height:28px;border:1px solid var(--border);border-radius:4px;background:var(--bg);cursor:pointer;padding:2px;}
 
 /* ── TOAST ── */
-textarea#editor.dragging{
-  border:2px dashed var(--gold)!important;
-  background:rgba(240,180,41,0.05)!important;
-  border-color:#c8a96b!important;
-  background:#1a1a0f!important;
-  box-shadow:0 0 0 3px rgba(200,169,107,.2);
-}
+
 .toast{position:fixed;bottom:20px;right:20px;background:var(--gold);color:#000;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:700;opacity:0;transform:translateY(8px);transition:all .3s;z-index:999;pointer-events:none;}
 .toast.show{opacity:1;transform:translateY(0);}
 
@@ -322,7 +316,7 @@ textarea#editor.dragging{
 
   <div id="selectionBar">✨ <span data-i18n="selActive">已選取文字 — 點選功能鍵可包裹</span></div>
   <textarea id="editor"
-    placeholder="點功能按鈕插入 BBCode，或直接輸入...（可拖曳圖片或截圖貼上自動上傳）"
+    placeholder="點功能按鈕插入 BBCode，或直接輸入..."
     oninput="onEditorInput()"
     onmouseup="checkSel()"
     onkeyup="checkSel()"
@@ -885,11 +879,15 @@ function openModal(tag){
       document.getElementById('modalOK').textContent='插入';
       break;
     case 'catbox':
-      html=`<div style="background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;">
-        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px;">⚡ 直接上傳（推薦）</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">選擇圖片/影片，自動上傳到 Catbox 並插入 BBCode</div>
-        <button class="postimg-open-btn" onclick="selectUploadFile();closeModal();" style="width:100%;text-align:center;">📁 選擇檔案上傳</button>
-        <div style="font-size:10px;color:var(--text2);margin-top:6px;">也可以直接把圖片拖曳到編輯器，或截圖後直接貼上（Ctrl+V）</div>
+      html=`<div id="cbDropzone" style="background:rgba(240,180,41,0.08);border:2px dashed rgba(240,180,41,0.5);border-radius:10px;padding:20px 14px;margin-bottom:12px;text-align:center;transition:all .2s;cursor:pointer;"
+        ondragover="event.preventDefault();this.style.background='rgba(240,180,41,0.18)';this.style.borderColor='var(--gold)';"
+        ondragleave="this.style.background='rgba(240,180,41,0.08)';this.style.borderColor='rgba(240,180,41,0.5)';"
+        ondrop="event.preventDefault();this.style.background='rgba(240,180,41,0.08)';this.style.borderColor='rgba(240,180,41,0.5)';handleCbDrop(event);"
+        onclick="selectUploadFile();">
+        <div style="font-size:28px;margin-bottom:8px;">📁</div>
+        <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:4px;">點擊選擇 或 拖曳檔案到此</div>
+        <div style="font-size:11px;color:var(--text2);">支援圖片與影片，自動上傳到 Catbox</div>
+        <div id="cbUploadStatus" style="margin-top:10px;font-size:12px;min-height:18px;"></div>
       </div>
       <div class="postimg-steps">
         <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">手動上傳（備用）</div><div class="step-desc">若自動上傳失敗，可手動前往 Catbox 網站上傳。</div><button class="postimg-open-btn" onclick="window.open('https://catbox.moe/','_blank')">🐱 開啟 Catbox</button></div></div>
@@ -1323,19 +1321,7 @@ function updatePreview(){
 ═══════════════════════════════════════════ */
 const CATBOX_API='https://catbox.moe/user/api.php';
 
-editor.addEventListener('dragover',e=>{e.preventDefault();editor.classList.add('dragging');});
-editor.addEventListener('dragleave',()=>{editor.classList.remove('dragging');});
-editor.addEventListener('drop',async e=>{
-  e.preventDefault();editor.classList.remove('dragging');
-  const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));
-  for(const file of files){await uploadToCatbox(file);}
-});
-editor.addEventListener('paste',async e=>{
-  const items=[...e.clipboardData.items].filter(i=>i.type.startsWith('image/'));
-  if(!items.length)return;
-  e.preventDefault();
-  for(const item of items){const f=item.getAsFile();if(f)await uploadToCatbox(f);}
-});
+// drag/drop upload handled inside Catbox modal dropzone
 
 async function compressImage(file){
   return new Promise(resolve=>{
@@ -1358,7 +1344,10 @@ async function compressImage(file){
 }
 
 async function uploadToCatbox(file){
+  const statusEl=document.getElementById('cbUploadStatus');
+  const setStatus=(msg,color='#f0b429')=>{if(statusEl)statusEl.innerHTML=`<span style="color:${color}">${msg}</span>`;};
   try{
+    setStatus('⬆ 上傳中...');
     showToast('⬆ 上傳中...');
     const isImg=file.type.startsWith('image/');
     const processed=isImg?await compressImage(file):file;
@@ -1374,11 +1363,23 @@ async function uploadToCatbox(file){
     insertAtCursor(bbcode);
     addToGallery(url,isImg?'img':'vid');
     updatePreview();
+    setStatus(`✅ 成功！<br><span style="font-size:10px;word-break:break-all;">${url}</span>`,'#22c55e');
     showToast('✅ 上傳成功！');
   }catch(err){
     console.error(err);
-    showToast('❌ 上傳失敗，請改用手動方式');
+    setStatus('❌ 上傳失敗，請改用下方手動方式','#ef4444');
+    showToast('❌ 上傳失敗');
   }
+}
+
+async function handleCbDrop(e){
+  const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));
+  if(!files.length){
+    const statusEl=document.getElementById('cbUploadStatus');
+    if(statusEl)statusEl.innerHTML='<span style="color:#ef4444">❌ 不支援此檔案類型</span>';
+    return;
+  }
+  for(const f of files)await uploadToCatbox(f);
 }
 
 function selectUploadFile(){
