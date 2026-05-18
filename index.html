@@ -120,17 +120,16 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 .postimg-open-btn:hover{background:var(--gold2);}
 
 /* gallery */
-.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;max-height:340px;overflow-y:auto;padding:2px 4px 4px 2px;box-sizing:border-box;}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;max-height:300px;overflow-y:auto;padding-right:4px;}
 .gallery-grid::-webkit-scrollbar{width:4px;}
 .gallery-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-.gallery-item{position:relative;cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;aspect-ratio:1/1;background:var(--bg);flex-shrink:0;min-width:0;min-height:0;}
+.gallery-item{position:relative;cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--bg);}
 .gallery-item:hover{border-color:var(--gold);}
-.gallery-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
-.gallery-item canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
-.gallery-item .gal-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
-.gallery-item .gal-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.78);color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;display:none;z-index:2;line-height:1.4;}
+.gallery-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.gallery-item canvas{width:100%;height:100%;display:block;}
+.gallery-item .gal-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.75);color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;display:none;line-height:1.4;}
 .gallery-item:hover .gal-del{display:block;}
-.gallery-item .gal-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 4px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;text-align:center;z-index:1;}
+.gallery-item .gal-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;padding:2px 4px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;text-align:center;}
 .gallery-empty{color:var(--text2);font-size:12px;text-align:center;padding:24px 10px;grid-column:1/-1;line-height:1.6;}
 /* color picker row */
 .color-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;}
@@ -139,7 +138,6 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 .color-custom{width:32px;height:28px;border:1px solid var(--border);border-radius:4px;background:var(--bg);cursor:pointer;padding:2px;}
 
 /* ── TOAST ── */
-
 .toast{position:fixed;bottom:20px;right:20px;background:var(--gold);color:#000;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:700;opacity:0;transform:translateY(8px);transition:all .3s;z-index:999;pointer-events:none;}
 .toast.show{opacity:1;transform:translateY(0);}
 
@@ -385,9 +383,12 @@ let saveEditorTimer;
 function onEditorInput(){
   clearTimeout(undoTimer);
   undoTimer=setTimeout(()=>pushUndo(editor.value),400);
+  // Auto-save editor content to localStorage
   clearTimeout(saveEditorTimer);
-  saveEditorTimer=setTimeout(()=>{try{localStorage.setItem('liujin_editor_content',editor.value);}catch(e){}},800);
-  delayedS2T();
+  saveEditorTimer=setTimeout(()=>{
+    try{localStorage.setItem('liujin_editor_content',editor.value);}catch(e){}
+  },800);
+  s2tConvert();
   // Auto-detect media links pasted into editor and save to gallery
   const val=editor.value;
   let m;
@@ -423,74 +424,45 @@ function onEditorInput(){
    Basic common substitution map
 ═══════════════════════════════════════════ */
 const s2tMap={'爱':'愛','办':'辦','报':'報','边':'邊','变':'變','标':'標','长':'長','场':'場','车':'車','称':'稱','传':'傳','当':'當','党':'黨','东':'東','动':'動','对':'對','发':'發','风':'風','复':'復','给':'給','关':'關','观':'觀','国':'國','过':'過','还':'還','话':'話','画':'畫','汇':'匯','会':'會','机':'機','际':'際','进':'進','经':'經','来':'來','乐':'樂','离':'離','里':'裡','联':'聯','楼':'樓','么':'麼','门':'門','面':'麵','难':'難','农':'農','齐':'齊','气':'氣','钱':'錢','强':'強','请':'請','书':'書','数':'數','说':'說','台':'臺','题':'題','头':'頭','团':'團','万':'萬','为':'為','问':'問','现':'現','线':'線','响':'響','样':'樣','业':'業','义':'義','应':'應','语':'語','员':'員','远':'遠','战':'戰','这':'這','种':'種','专':'專','总':'總'};
-let composing=false;
-editor.addEventListener('compositionstart',()=>{composing=true;});
-editor.addEventListener('compositionend',()=>{composing=false;delayedS2T();});
-let s2tTimer;
-function delayedS2T(){
-  clearTimeout(s2tTimer);
-  s2tTimer=setTimeout(()=>{
-    if(composing)return;
-    const ta=document.getElementById('editor');
-    const pos=ta.selectionStart;
-    let v=ta.value;let changed=false;
-    for(const[s,t_] of Object.entries(s2tMap)){if(v.includes(s)){v=v.split(s).join(t_);changed=true;}}
-    if(changed){ta.value=v;ta.selectionStart=ta.selectionEnd=pos;}
-  },500);
-}
-function s2tConvert(){delayedS2T();}
+function s2tConvert(){const ta=document.getElementById('editor');const pos=ta.selectionStart;let v=ta.value;let changed=false;for(const[s,t_]of Object.entries(s2tMap)){if(v.includes(s)){v=v.split(s).join(t_);changed=true;}}if(changed){ta.value=v;ta.selectionStart=ta.selectionEnd=pos;}}
 
 /* ═══════════════════════════════════════════
    GALLERY
 ═══════════════════════════════════════════ */
 // Gallery persisted in localStorage
 let gallery=[];
-try{const saved=localStorage.getItem('liujin_gallery');if(saved){gallery=JSON.parse(saved).slice(0,30);}}catch(e){gallery=[];}
-function saveGallery(){try{gallery=gallery.slice(0,30);localStorage.setItem('liujin_gallery',JSON.stringify(gallery));}catch(e){console.warn('Gallery save failed',e);}}
-function clearGallery(){
-  if(!gallery.length){showToast('圖庫已經是空的');return;}
-  if(!confirm('確定要清空圖庫？這會清除所有暫存的圖片和影片連結。'))return;
-  gallery=[];
-  saveGallery();
-  // Re-render if gallery modal is open
-  const grid=document.getElementById('galGrid');
-  if(grid)renderGallery(grid);
-  showToast('✅ 圖庫已清空');
-}
-function addToGallery(url,type='img'){
-  if(!url)return;
-  if(gallery.find(g=>g.url===url))return;
-  gallery.unshift({url,type,ts:Date.now()});
-  gallery=gallery.slice(0,30);
-  saveGallery();
-}
+try{const saved=localStorage.getItem('liujin_gallery');if(saved)gallery=JSON.parse(saved);}catch(e){}
+function saveGallery(){try{localStorage.setItem('liujin_gallery',JSON.stringify(gallery.slice(0,50)));}catch(e){}}
+function addToGallery(url,type='img'){if(gallery.find(g=>g.url===url))return;gallery.unshift({url,type,ts:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);saveGallery();}
 function renderGallery(container){
   container.innerHTML='';
-  if(!gallery.length){
-    container.innerHTML=`<div class="gallery-empty">尚無已儲存的圖片/影片連結<br><span style="font-size:10px;opacity:.7;">上傳或插入圖片/影片後會自動記錄</span></div>`;
-    return;
-  }
+  if(!gallery.length){container.innerHTML='<div class="gallery-empty">尚無已儲存的圖片/影片連結<br><span style="font-size:10px;opacity:.7;">上傳或插入圖片/影片後會自動記錄</span></div>';return;}
   gallery.forEach((g,i)=>{
     const d=document.createElement('div');
     d.className='gallery-item';
     const delBtn=`<button class="gal-del" onclick="event.stopPropagation();gallery.splice(${i},1);saveGallery();renderGallery(this.closest('.gallery-grid'))">✕</button>`;
     if(g.type==='img'){
       const fname=g.url.split('/').pop().split('?')[0].slice(0,18);
-      d.innerHTML=`<img src="${g.url}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="gal-inner" style="display:none;background:#333;color:#888;font-size:11px;">No preview</div>${delBtn}<div class="gal-label">${fname}</div>`;
+      d.innerHTML=`<img src="${g.url}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23333%22 width=%22100%25%22 height=%22100%25%22/><text x=%2250%25%22 y=%2255%25%22 font-size=%2212%22 fill=%22%23888%22 text-anchor=%22middle%22>!</text></svg>'">${delBtn}<div class="gal-label">${fname}</div>`;
       d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
-    }else if(g.type==='vid'){
+    } else if(g.type==='vid'){
+      d.style.position='relative';
+      const vidIdx=i;
       const vfname=g.url.split('/').pop().split('?')[0].slice(0,18);
-      d.innerHTML=`<div class="gal-inner" style="background:#1a1a1a;color:#fff;font-size:26px;flex-direction:column;gap:4px;">▶<span style="font-size:8px;color:#888;word-break:break-all;max-width:90%;text-align:center;">${vfname}</span></div>${delBtn}<div class="gal-label">影片</div>`;
-      d.onclick=()=>{insertAtCursor(`[xmp4]${g.url}[/xmp4]\n`);closeModal();};
-    }else if(g.type==='yt'){
-      const ytid=g.url.slice(0,11);
-      d.innerHTML=`<img src="https://img.youtube.com/vi/${ytid}/mqdefault.jpg" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="gal-inner" style="display:none;background:#1a1a2e;font-size:26px;">▶️</div>${delBtn}<div class="gal-label">YouTube</div>`;
-      d.onclick=()=>{insertAtCursor(`[xyoutube]${g.url}[/xyoutube]\n`);closeModal();};
-    }else if(g.type==='tt'){
-      d.innerHTML=`<div class="gal-inner" style="background:#111;font-size:26px;">🎶</div>${delBtn}<div class="gal-label">TikTok</div>`;
-      d.onclick=()=>{insertAtCursor(`[xtiktok]${g.url}[/xtiktok]\n`);closeModal();};
-    }else{
-      d.innerHTML=`<div class="gal-inner" style="background:#222;font-size:26px;">📎</div>${delBtn}`;
+      d.innerHTML=`<canvas id="galvc${vidIdx}" style="width:100%;height:100%;display:block;background:#1a1a1a;"></canvas><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;pointer-events:none;color:#fff;">▶</div>${delBtn}<div class="gal-label">${vfname}</div>`;
+      (function(url,idx){setTimeout(()=>{const cv=document.getElementById('galvc'+idx);if(!cv)return;const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.addEventListener('loadeddata',()=>{v.currentTime=0.5;});v.addEventListener('seeked',()=>{cv.width=80;cv.height=80;const ctx=cv.getContext('2d');ctx.drawImage(v,0,0,80,80);v.remove();});v.load();},120);})(g.url,i);
+      d.onclick=()=>{insertAtCursor(`[xmp4]${g.url}[/xmp4]
+`);closeModal()};
+    } else if(g.type==='yt'){
+      d.innerHTML=`<div style="width:100%;height:100%;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:26px;">▶️</span></div>${delBtn}<div class="gal-label">YT: ${g.url}</div>`;
+      d.onclick=()=>{insertAtCursor(`[xyoutube]${g.url}[/xyoutube]
+`);closeModal();};
+    } else if(g.type==='tt'){
+      d.innerHTML=`<div style="width:100%;height:100%;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:26px;">🎶</span></div>${delBtn}<div class="gal-label">TT: ${g.url}</div>`;
+      d.onclick=()=>{insertAtCursor(`[xtiktok]${g.url}[/xtiktok]
+`);closeModal();};
+    } else {
+      d.innerHTML=`<div style="width:100%;height:100%;background:#222;display:flex;align-items:center;justify-content:center;font-size:20px;">📎</div>${delBtn}`;
       d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
     }
     d.title=g.url;
@@ -583,7 +555,7 @@ async function saveFile(){
   if(window.showSaveFilePicker){
     try{
       const fh=await window.showSaveFilePicker({
-        suggestedName:'流金.txt',
+        suggestedName:'liujin-bbcode.txt',
         types:[{description:'文字檔',accept:{'text/plain':['.txt']}}]
       });
       const w=await fh.createWritable();
@@ -595,16 +567,10 @@ async function saveFile(){
   }
   // fallback
   const blob=new Blob([content_],{type:'text/plain;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='流金.txt';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='liujin-bbcode.txt';a.click();
   showToast(t('saved'));
 }
-function fallbackCopy(){editor.focus();editor.select();document.execCommand('copy');showToast(t('copied'));}
-function copyCode(){
-  if(!editor.value.trim())return;
-  if(navigator.clipboard&&window.isSecureContext){
-    navigator.clipboard.writeText(editor.value).then(()=>showToast(t('copied'))).catch(()=>fallbackCopy());
-  }else{fallbackCopy();}
-}
+function copyCode(){if(!editor.value.trim())return;navigator.clipboard.writeText(editor.value).then(()=>showToast(t('copied')));}
 /* ═══════════════════════════════════════════
    SPLIT / MERGE VIEW
 ═══════════════════════════════════════════ */
@@ -643,17 +609,24 @@ function toggleSplitMerge(){
 }
 
 function showMergedPreview(){
-  let overlay=document.getElementById('previewOverlay');
+  // Show a fullscreen overlay with the preview content
+  let overlay = document.getElementById('previewOverlay');
   if(!overlay){
-    overlay=document.createElement('div');
-    overlay.id='previewOverlay';
-    overlay.style.cssText='position:fixed;inset:0;background:#fff;z-index:300;display:flex;flex-direction:column;overflow:hidden;';
-    overlay.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f5f5f0;border-bottom:1px solid #ddd;flex-shrink:0;"><span style="font-size:13px;font-weight:600;color:#666;">👁 論壇預覽</span><button id="closePreviewBtn" style="background:#e0e0e0;border:none;border-radius:6px;padding:5px 14px;font-size:12px;cursor:pointer;font-family:inherit;">✕ 關閉</button></div><div id="previewOverlayBody" style="flex:1;overflow-y:auto;padding:18px 22px;font-family:'Noto Sans TC',sans-serif;font-size:14px;line-height:1.8;color:#333;"></div>`;
+    overlay = document.createElement('div');
+    overlay.id = 'previewOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:300;display:flex;flex-direction:column;overflow:hidden;';
+    overlay.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f5f5f0;border-bottom:1px solid #ddd;flex-shrink:0;">
+        <span style="font-size:13px;font-weight:600;color:#666;">👁 論壇預覽</span>
+        <button onclick="document.getElementById('previewOverlay').style.display='none'" style="background:#e0e0e0;border:none;border-radius:6px;padding:5px 14px;font-size:12px;cursor:pointer;font-family:inherit;">✕ 關閉</button>
+      </div>
+      <div id="previewOverlayBody" style="flex:1;overflow-y:auto;padding:18px 22px;font-family:'Noto Sans TC',sans-serif;font-size:14px;line-height:1.8;color:#333;"></div>
+    `;
     document.body.appendChild(overlay);
-    document.getElementById('closePreviewBtn').addEventListener('click',()=>{overlay.style.display='none';});
   }
-  document.getElementById('previewOverlayBody').innerHTML=document.getElementById('preview').innerHTML;
-  overlay.style.display='flex';
+  // Copy current preview content
+  document.getElementById('previewOverlayBody').innerHTML = document.getElementById('preview').innerHTML;
+  overlay.style.display = 'flex';
 }
 
 // Init: on mobile, start in merged mode automatically
@@ -664,18 +637,15 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
-const knownBBCodes=['b','i','u','strike','xgold','xcenter','xgban','xnote','xwarn','xblue','xgreen','xred','xinfo','xglass','quote','xquote','xtag','xrate','xbtn','xyoutube','xsyoutube','xmp4','xvmp4','xtiktok','xmp3','xsound','xsendvid','xmap','xmaplink','ximg','hide','xhr','align','url','code','size','color','backcolor','xspoiler','xsmall','xcard','xgban','xleft','xright','xthead','xtr'];
 function stripBBCode(){
-  if(!editor.value.trim())return;
+  if(!editor.value.trim()) return;
   pushUndo(editor.value);
-  let v=editor.value;
-  knownBBCodes.forEach(tag=>{
-    const re=new RegExp(`\\\\[\\\\/?${tag}(?:=[^\\\\]]+)?\\\\]`,'gi');
-    v=v.replace(re,'');
-  });
-  editor.value=v;
-  try{localStorage.removeItem('liujin_editor_content');}catch(e){}
-  updatePreview();updateStats();
+  // Remove all BBCode tags including those with attributes
+  let v = editor.value;
+  // Remove [tag=...] and [/tag] patterns
+  v = v.replace(/\[\/?\w[\w]*(?:=[^\]]+)?\]/g, '');
+  editor.value = v;
+  updatePreview(); updateStats();
   showToast('✅ 已清除所有 BBCode 語法');
 }
 
@@ -908,18 +878,8 @@ function openModal(tag){
       document.getElementById('modalOK').textContent='插入';
       break;
     case 'catbox':
-      html=`<div id="cbDropzone" style="background:rgba(240,180,41,0.08);border:2px dashed rgba(240,180,41,0.5);border-radius:10px;padding:20px 14px;margin-bottom:12px;text-align:center;transition:all .2s;cursor:pointer;"
-        ondragover="event.preventDefault();this.style.background='rgba(240,180,41,0.18)';this.style.borderColor='var(--gold)';"
-        ondragleave="this.style.background='rgba(240,180,41,0.08)';this.style.borderColor='rgba(240,180,41,0.5)';"
-        ondrop="event.preventDefault();this.style.background='rgba(240,180,41,0.08)';this.style.borderColor='rgba(240,180,41,0.5)';handleCbDrop(event);"
-        onclick="selectUploadFile();">
-        <div style="font-size:28px;margin-bottom:8px;">📁</div>
-        <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:4px;">點擊選擇 或 拖曳檔案到此</div>
-        <div style="font-size:11px;color:var(--text2);">支援圖片與影片，自動上傳到 Catbox</div>
-        <div id="cbUploadStatus" style="margin-top:10px;font-size:12px;min-height:18px;"></div>
-      </div>
-      <div class="postimg-steps">
-        <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">手動上傳（備用）</div><div class="step-desc">若自動上傳失敗，可手動前往 Catbox 網站上傳。</div><button class="postimg-open-btn" onclick="window.open('https://catbox.moe/','_blank')">🐱 開啟 Catbox</button></div></div>
+      html=`<div class="postimg-steps">
+        <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">開啟貓盒上傳</div><div class="step-desc">點下方按鈕在新分頁開啟 Catbox，上傳你的檔案。</div><button class="postimg-open-btn" onclick="window.open('https://catbox.moe/','_blank')">🐱 開啟 Catbox</button></div></div>
         <div class="postimg-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">選擇類型並貼上連結</div>
         <div style="display:flex;gap:8px;margin:8px 0;">
           <button id="cbTypeImg" class="btn btn-gold" style="flex:1;font-size:12px;" onclick="setCatboxType('img')">🖼 圖片</button>
@@ -934,11 +894,7 @@ function openModal(tag){
       setTimeout(()=>{ setCatboxType('img'); },30);
       break;
     case 'gallery':
-      html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-        <span style="font-size:11px;color:var(--text2);">點選圖片/影片可插入 BBCode。圖庫儲存在此裝置，重新開啟仍保留。</span>
-        <button class="btn btn-ghost btn-sm" onclick="clearGallery()" style="font-size:11px;color:#ef4444;border-color:#ef4444;" title="清空所有圖庫內容">🗑 清空圖庫</button>
-      </div>
-      <div class="gallery-grid" id="galGrid"></div>`;
+      html=`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;">點選圖片/影片可插入 BBCode。圖庫會儲存在此裝置，重新開啟仍可使用。</div><div class="gallery-grid" id="galGrid"></div>`;
       document.getElementById('modalOK').style.display='none';break;
     case 'dialog':
       html=`<div style="font-size:11px;color:var(--text2);margin-bottom:10px;">點「+ 新增對話」加入訊息，可選左側或右側，可自由刪除。</div>
@@ -1222,9 +1178,6 @@ document.addEventListener('keydown',e=>{
 /* ═══════════════════════════════════════════
    PREVIEW RENDERER
 ═══════════════════════════════════════════ */
-function escapeHTML(str=''){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
-function safePreviewHTML(str=''){return escapeHTML(str).replace(/
-/g,'<br>');}
 function updatePreview(){
   let h=editor.value;
   // Extract [code] blocks FIRST (before any other processing) to preserve literal content
@@ -1350,81 +1303,6 @@ function updatePreview(){
   // Restore [code] block placeholders
   codePlaceholders.forEach((html,i)=>{h=h.replace(`«code${i}»`,html);});
   document.getElementById('preview').innerHTML=h||'<p style="color:#aaa;font-size:13px;text-align:center;margin-top:50px;">← 從左側選擇標籤開始</p>';
-}
-
-/* ═══════════════════════════════════════════
-   CATBOX AUTO UPLOAD
-═══════════════════════════════════════════ */
-const CATBOX_API='https://catbox.moe/user/api.php';
-
-// drag/drop upload handled inside Catbox modal dropzone
-
-async function compressImage(file){
-  return new Promise(resolve=>{
-    const img=new Image();
-    const reader=new FileReader();
-    reader.onload=e=>{
-      img.onload=()=>{
-        const canvas=document.createElement('canvas');
-        let w=img.width,h=img.height;
-        const MAX=2000;
-        if(w>MAX||h>MAX){if(w>h){h*=MAX/w;w=MAX;}else{w*=MAX/h;h=MAX;}}
-        canvas.width=w;canvas.height=h;
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
-        canvas.toBlob(blob=>{resolve(new File([blob],file.name.replace(/\.\w+$/,'.jpg'),{type:'image/jpeg'}));},'image/jpeg',0.88);
-      };
-      img.src=e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function uploadToCatbox(file){
-  const statusEl=document.getElementById('cbUploadStatus');
-  const setStatus=(msg,color='#f0b429')=>{if(statusEl)statusEl.innerHTML=`<span style="color:${color}">${msg}</span>`;};
-  try{
-    setStatus('⬆ 上傳中...');
-    showToast('⬆ 上傳中...');
-    const isImg=file.type.startsWith('image/');
-    const processed=isImg?await compressImage(file):file;
-    const fd=new FormData();
-    fd.append('reqtype','fileupload');
-    fd.append('fileToUpload',processed);
-    const res=await fetch(CATBOX_API,{method:'POST',body:fd});
-    const url=(await res.text()).trim();
-    if(!url.startsWith('https://'))throw new Error(url);
-    const bbcode=isImg?`[ximg]${url}[/ximg]
-`:`[xmp4]${url}[/xmp4]
-`;
-    insertAtCursor(bbcode);
-    addToGallery(url,isImg?'img':'vid');
-    updatePreview();
-    setStatus(`✅ 成功！<br><span style="font-size:10px;word-break:break-all;">${url}</span>`,'#22c55e');
-    showToast('✅ 上傳成功！');
-  }catch(err){
-    console.error(err);
-    setStatus('❌ 上傳失敗，請改用下方手動方式','#ef4444');
-    showToast('❌ 上傳失敗');
-  }
-}
-
-async function handleCbDrop(e){
-  const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));
-  if(!files.length){
-    const statusEl=document.getElementById('cbUploadStatus');
-    if(statusEl)statusEl.innerHTML='<span style="color:#ef4444">❌ 不支援此檔案類型</span>';
-    return;
-  }
-  for(const f of files)await uploadToCatbox(f);
-}
-
-function selectUploadFile(){
-  const input=document.createElement('input');
-  input.type='file';
-  input.accept='image/*,video/mp4,video/mov,video/quicktime';
-  input.multiple=true;
-  input.onchange=async()=>{for(const f of [...input.files])await uploadToCatbox(f);};
-  input.click();
 }
 
 /* ═══════════════════════════════════════════
