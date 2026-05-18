@@ -138,6 +138,13 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 .color-custom{width:32px;height:28px;border:1px solid var(--border);border-radius:4px;background:var(--bg);cursor:pointer;padding:2px;}
 
 /* ── TOAST ── */
+textarea#editor.dragging{
+  border:2px dashed var(--gold)!important;
+  background:rgba(240,180,41,0.05)!important;
+  border-color:#c8a96b!important;
+  background:#1a1a0f!important;
+  box-shadow:0 0 0 3px rgba(200,169,107,.2);
+}
 .toast{position:fixed;bottom:20px;right:20px;background:var(--gold);color:#000;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:700;opacity:0;transform:translateY(8px);transition:all .3s;z-index:999;pointer-events:none;}
 .toast.show{opacity:1;transform:translateY(0);}
 
@@ -176,6 +183,7 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
 #preview .media-ph{background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin:6px 0;font-size:12px;color:#888;text-align:center;}
 #preview img.forum-img{max-width:100%;border-radius:4px;margin:4px 0;display:block;}
 #preview .yt-embed{width:100%;aspect-ratio:16/9;border-radius:6px;border:none;margin:6px 0;}
+@keyframes flyText{0%{transform:translateX(100%);}100%{transform:translateX(-100%);}}
 
 /* ══════════════════════════════════════════
    MOBILE RESPONSIVE
@@ -311,11 +319,14 @@ textarea#editor::selection{background:rgba(240,180,41,.2);}
     <button class="fmt-btn" onclick="insertAtCursor('[hr]\n')" title="分隔線（細灰色）">分隔線</button>
     <button class="fmt-btn" onclick="wrapFmt('code')" title="程式碼（原樣顯示）">&lt;/&gt;</button>
     <button class="fmt-btn" onclick="wrapFmt('url')" title="超連結">🔗</button>
+    <div class="fmt-sep"></div>
+    <button class="fmt-btn" onclick="wrapFmt('fly')" title="飛行文字效果">✈ 飛行</button>
+    <button class="fmt-btn" onclick="wrapFmt('move')" title="跑馬燈捲動效果">📜 跑馬燈</button>
   </div>
 
   <div id="selectionBar">✨ <span data-i18n="selActive">已選取文字 — 點選功能鍵可包裹</span></div>
   <textarea id="editor"
-    placeholder="點功能按鈕插入 BBCode，或直接輸入..."
+    placeholder="點功能按鈕插入 BBCode，或直接輸入...（可拖曳圖片或截圖貼上自動上傳）"
     oninput="onEditorInput()"
     onmouseup="checkSel()"
     onkeyup="checkSel()"
@@ -555,7 +566,7 @@ async function saveFile(){
   if(window.showSaveFilePicker){
     try{
       const fh=await window.showSaveFilePicker({
-        suggestedName:'liujin-bbcode.txt',
+        suggestedName:'流金.txt',
         types:[{description:'文字檔',accept:{'text/plain':['.txt']}}]
       });
       const w=await fh.createWritable();
@@ -567,7 +578,7 @@ async function saveFile(){
   }
   // fallback
   const blob=new Blob([content_],{type:'text/plain;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='liujin-bbcode.txt';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='流金.txt';a.click();
   showToast(t('saved'));
 }
 function copyCode(){if(!editor.value.trim())return;navigator.clipboard.writeText(editor.value).then(()=>showToast(t('copied')));}
@@ -640,10 +651,18 @@ window.addEventListener('DOMContentLoaded',()=>{
 function stripBBCode(){
   if(!editor.value.trim()) return;
   pushUndo(editor.value);
-  // Remove all BBCode tags including those with attributes
   let v = editor.value;
-  // Remove [tag=...] and [/tag] patterns
-  v = v.replace(/\[\/?\w[\w]*(?:=[^\]]+)?\]/g, '');
+  // Whitelist of known BBCode tag names (including those with = attributes)
+  const knownTags = [
+    'b','i','u','strike','size','color','backcolor','align','hr','code','url',
+    'img','ximg','xmp4','xvmp4','xmp3','xsound','xyoutube','xsyoutube','xtiktok','xsendvid',
+    'xmap','xmaplink','xhr','xgold','xcenter','xgban','xnote','xwarn','xblue','xgreen',
+    'xred','xinfo','xglass','xsmall','xquote','quote','xtag','xrate','xbtn','xspoiler',
+    'xcard','xleft','xright','xthead','xtr','hide','fly','move'
+  ];
+  const tagPattern = knownTags.join('|');
+  // Match opening tags (with optional =value) and closing tags for known BBCode only
+  v = v.replace(new RegExp(`\\[\\/?(?:${tagPattern})(?:=[^\\]]+)?\\]`, 'gi'), '');
   editor.value = v;
   updatePreview(); updateStats();
   showToast('✅ 已清除所有 BBCode 語法');
@@ -878,8 +897,14 @@ function openModal(tag){
       document.getElementById('modalOK').textContent='插入';
       break;
     case 'catbox':
-      html=`<div class="postimg-steps">
-        <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">開啟貓盒上傳</div><div class="step-desc">點下方按鈕在新分頁開啟 Catbox，上傳你的檔案。</div><button class="postimg-open-btn" onclick="window.open('https://catbox.moe/','_blank')">🐱 開啟 Catbox</button></div></div>
+      html=`<div style="background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px;">⚡ 直接上傳（推薦）</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">選擇圖片/影片，自動上傳到 Catbox 並插入 BBCode</div>
+        <button class="postimg-open-btn" onclick="selectUploadFile();closeModal();" style="width:100%;text-align:center;">📁 選擇檔案上傳</button>
+        <div style="font-size:10px;color:var(--text2);margin-top:6px;">也可以直接把圖片拖曳到編輯器，或截圖後直接貼上（Ctrl+V）</div>
+      </div>
+      <div class="postimg-steps">
+        <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">手動上傳（備用）</div><div class="step-desc">若自動上傳失敗，可手動前往 Catbox 網站上傳。</div><button class="postimg-open-btn" onclick="window.open('https://catbox.moe/','_blank')">🐱 開啟 Catbox</button></div></div>
         <div class="postimg-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">選擇類型並貼上連結</div>
         <div style="display:flex;gap:8px;margin:8px 0;">
           <button id="cbTypeImg" class="btn btn-gold" style="flex:1;font-size:12px;" onclick="setCatboxType('img')">🖼 圖片</button>
@@ -1193,6 +1218,8 @@ function updatePreview(){
   h=h.replace(/\[i\]([\s\S]*?)\[\/i\]/g,'<i>$1</i>');
   h=h.replace(/\[u\]([\s\S]*?)\[\/u\]/g,'<u>$1</u>');
   h=h.replace(/\[strike\]([\s\S]*?)\[\/strike\]/g,'<s>$1</s>');
+  h=h.replace(/\[fly\]([\s\S]*?)\[\/fly\]/g,'<span style="display:inline-block;animation:flyText 3s linear infinite;white-space:nowrap;">$1</span>');
+  h=h.replace(/\[move\]([\s\S]*?)\[\/move\]/g,'<marquee scrollamount="3" style="display:block;white-space:nowrap;">$1</marquee>');
   h=h.replace(/\[size=(\d+)\]([\s\S]*?)\[\/size\]/g,(_,s,c)=>`<span style="font-size:${8+parseInt(s)*2}px">${c}</span>`);
   h=h.replace(/\[color=(#[0-9a-fA-F]{3,8}|[a-z]+)\]([\s\S]*?)\[\/color\]/g,'<span style="color:$1">$2</span>');
   h=h.replace(/\[backcolor=(#[0-9a-fA-F]{3,8}|[a-z]+)\]([\s\S]*?)\[\/backcolor\]/g,'<span style="background:$1;padding:0 2px;">$2</span>');
@@ -1303,6 +1330,78 @@ function updatePreview(){
   // Restore [code] block placeholders
   codePlaceholders.forEach((html,i)=>{h=h.replace(`«code${i}»`,html);});
   document.getElementById('preview').innerHTML=h||'<p style="color:#aaa;font-size:13px;text-align:center;margin-top:50px;">← 從左側選擇標籤開始</p>';
+}
+
+/* ═══════════════════════════════════════════
+   CATBOX AUTO UPLOAD
+═══════════════════════════════════════════ */
+const CATBOX_API='https://catbox.moe/user/api.php';
+
+editor.addEventListener('dragover',e=>{e.preventDefault();editor.classList.add('dragging');});
+editor.addEventListener('dragleave',()=>{editor.classList.remove('dragging');});
+editor.addEventListener('drop',async e=>{
+  e.preventDefault();editor.classList.remove('dragging');
+  const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));
+  for(const file of files){await uploadToCatbox(file);}
+});
+editor.addEventListener('paste',async e=>{
+  const items=[...e.clipboardData.items].filter(i=>i.type.startsWith('image/'));
+  if(!items.length)return;
+  e.preventDefault();
+  for(const item of items){const f=item.getAsFile();if(f)await uploadToCatbox(f);}
+});
+
+async function compressImage(file){
+  return new Promise(resolve=>{
+    const img=new Image();
+    const reader=new FileReader();
+    reader.onload=e=>{
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        let w=img.width,h=img.height;
+        const MAX=2000;
+        if(w>MAX||h>MAX){if(w>h){h*=MAX/w;w=MAX;}else{w*=MAX/h;h=MAX;}}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>{resolve(new File([blob],file.name.replace(/\.\w+$/,'.jpg'),{type:'image/jpeg'}));},'image/jpeg',0.88);
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadToCatbox(file){
+  try{
+    showToast('⬆ 上傳中...');
+    const isImg=file.type.startsWith('image/');
+    const processed=isImg?await compressImage(file):file;
+    const fd=new FormData();
+    fd.append('reqtype','fileupload');
+    fd.append('fileToUpload',processed);
+    const res=await fetch(CATBOX_API,{method:'POST',body:fd});
+    const url=(await res.text()).trim();
+    if(!url.startsWith('https://'))throw new Error(url);
+    const bbcode=isImg?`[ximg]${url}[/ximg]
+`:`[xmp4]${url}[/xmp4]
+`;
+    insertAtCursor(bbcode);
+    addToGallery(url,isImg?'img':'vid');
+    updatePreview();
+    showToast('✅ 上傳成功！');
+  }catch(err){
+    console.error(err);
+    showToast('❌ 上傳失敗，請改用手動方式');
+  }
+}
+
+function selectUploadFile(){
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='image/*,video/mp4,video/mov,video/quicktime';
+  input.multiple=true;
+  input.onchange=async()=>{for(const f of [...input.files])await uploadToCatbox(f);};
+  input.click();
 }
 
 /* ═══════════════════════════════════════════
