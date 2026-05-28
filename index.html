@@ -514,7 +514,9 @@ textarea#editor.dragging{
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.min.js"></script>
 <script>
+
 /* ═══════════════════════════════════════════
    I18N
 ═══════════════════════════════════════════ */
@@ -718,19 +720,23 @@ document.addEventListener('mousedown',e=>{
 // Re-read live selection right before wrapping (fixes mobile select-all bug)
 function getLiveSel(){
   const s=editor.selectionStart, e=editor.selectionEnd;
-  // If editor has an active selection, use it and update savedSel
   if(s!==e){
     const liveText=editor.value.slice(s,e);
-    // Only update savedSel if live selection is different from saved
-    if(liveText!==savedSel.text){
-      savedSel={start:s,end:e,text:liveText};
-    }
+    savedSel={start:s,end:e,text:liveText};
     return {start:s,end:e,text:liveText};
   }
-  // On mobile, tapping a button blurs editor and resets selection to 0
-  // So we fall back to savedSel which was captured by selectionchange
+  // On mobile, button tap blurs editor and resets selection
+  // Use savedSel ONLY if the selected text still exists at that position in editor
   if(savedSel.text){
-    return savedSel;
+    const currentAtPos=editor.value.slice(savedSel.start,savedSel.end);
+    if(currentAtPos===savedSel.text){
+      return savedSel; // text still there, safe to use
+    }
+    // Text was cut/deleted - clear savedSel
+    savedSel={start:0,end:0,text:''};
+    document.body.classList.remove('has-selection');
+    const sb=document.getElementById('selectionBar');
+    if(sb)sb.classList.remove('visible');
   }
   return {start:s,end:e,text:''};
 }
@@ -787,7 +793,18 @@ function wrapFmt(tag,attr){
 /* ═══════════════════════════════════════════
    STATS
 ═══════════════════════════════════════════ */
-function updateStats(){const v=editor.value;document.getElementById('charCount').textContent=v.length+t('charUnit');const zh=(v.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g)||[]).length;document.getElementById('zhCount').textContent=t('zhUnit')+zh+'字';}
+function updateStats(){
+  const v=editor.value;
+  document.getElementById('charCount').textContent=v.length+t('charUnit');
+  // Strip BBCode tags to get actual text
+  const plainText=v.replace(/\[[^\]]*\]/g,'');
+  const zhCount=(plainText.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g)||[]).length;
+  // Count images and videos
+  const imgCount=(v.match(/\[ximg\]/g)||[]).length+(v.match(/\[url=[^\]]+\]\[img\]/g)||[]).length;
+  const vidCount=(v.match(/\[xmp4\]/g)||[]).length+(v.match(/\[xvmp4\]/g)||[]).length+(v.match(/\[xsendvid\]/g)||[]).length+(v.match(/\[xyoutube\]/g)||[]).length+(v.match(/\[xsyoutube\]/g)||[]).length+(v.match(/\[xtiktok\]/g)||[]).length;
+  const statsEl=document.getElementById('zhCount');
+  if(statsEl) statsEl.textContent='中文：'+zhCount+'字'+(imgCount?' | 圖：'+imgCount:'')+(vidCount?' | 影：'+vidCount:'');
+}
 
 /* ═══════════════════════════════════════════
    FILE OPS
@@ -1176,7 +1193,7 @@ function openModal(tag){
       break;
     case 'gallery':
       html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;">
-        <span style="font-size:11px;color:var(--text2);flex:1;">點選圖片/影片可插入 BBCode。圖庫會儲存最新30項在此裝置，重新開啟仍可使用。</span>
+        <span style="font-size:11px;color:var(--text2);flex:1;">點選圖片/影片即可插入文章使用。圖庫會儲存最新 50 項在此裝置，同裝置重新開啟仍可使用。</span>
         <span id="galCounter" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--gold);white-space:nowrap;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 8px;">0/30</span>
       </div>
       <div class="gallery-grid" id="galGrid"></div>
@@ -1673,9 +1690,8 @@ try{
   if(saved){editor.value=saved;updatePreview();updateStats();}
 }catch(e){}
 pushUndo(editor.value||'');
-</script>
-<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.min.js"></script>
-<script>
+
+
 let _s2tConv=null;
 function _getS2TConv(){
   if(!_s2tConv){try{_s2tConv=OpenCC.Converter({from:'cn',to:'tw'});}catch(e){_s2tConv=null;}}
@@ -1941,5 +1957,6 @@ try{
   const t = localStorage.getItem('liujin_theme');
   if(t==='light'){ isLight=true; document.body.classList.add('light-theme'); const b=document.getElementById('themeBtn'); if(b)b.textContent='🌙 深色'; }
 }catch(e){}
-
-
+</script>
+</body>
+</html>
