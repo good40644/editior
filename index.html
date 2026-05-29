@@ -36,7 +36,6 @@ body.light-theme header{background:linear-gradient(135deg,#e8ecf5,#dde2f0);}
 
 /* ── MAIN LAYOUT ── */
 .main{display:grid;grid-template-columns:240px 1fr 1fr;flex:1;min-height:0;overflow:hidden;}
-.main.panel4-open{grid-template-columns:240px 1fr 1fr 320px;}
 
 /* ── LEFT PANEL ── */
 .panel-left{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
@@ -92,8 +91,19 @@ body.light-theme textarea#editor{color:#1a1d2e;}
 .panel-right .panel-header h3{color:#666;}
 #preview{flex:1;overflow-y:auto;padding:18px 22px;font-family:'Noto Sans TC',sans-serif;font-size:14px;line-height:1.8;color:var(--preview-color);background:var(--preview-bg);}
 
-/* ── PANEL 4 (gallery/draft) ── */
-.panel-four{display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border-left:1px solid var(--border);width:320px;flex-shrink:0;}
+/* ── PANEL 4 (gallery/draft) — fixed right sidebar ── */
+.panel-four{
+  position:fixed;top:0;right:0;bottom:0;
+  width:320px;
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--surface);border-left:1px solid var(--border);
+  z-index:150;
+  box-shadow:-4px 0 20px rgba(0,0,0,.25);
+  /* smooth slide-in */
+  transform:translateX(100%);
+  transition:transform .22s cubic-bezier(.4,0,.2,1);
+}
+.panel-four.open{transform:translateX(0);}
 .panel-four .p4-header{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .panel-four .p4-header h3{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
 .panel-four .p4-body{flex:1;overflow-y:auto;padding:12px;}
@@ -102,6 +112,8 @@ body.light-theme textarea#editor{color:#1a1d2e;}
 
 /* ── FLOATING BUTTONS (gallery & draft) ── */
 .float-btns{position:absolute;bottom:16px;right:16px;display:flex;flex-direction:column;gap:10px;z-index:50;}
+/* merged-mode float btns: fixed to bottom-right of viewport */
+.float-btns-merged{position:fixed;bottom:20px;right:20px;z-index:140;}
 .float-btn{width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;position:relative;}
 .float-btn.active{box-shadow:0 0 0 3px var(--gold),0 4px 14px rgba(0,0,0,.3);}
 .float-btn-gallery{background:#1e2333;}
@@ -111,7 +123,22 @@ body.light-theme textarea#editor{color:#1a1d2e;}
 body.light-theme .float-btn-gallery,body.light-theme .float-btn-draft{background:#e0e4ef;box-shadow:0 4px 14px rgba(0,0,0,.15);}
 body.light-theme .float-btn-gallery:hover,body.light-theme .float-btn-draft:hover{background:#cdd2e8;}
 
-/* ── GALLERY (new panel style) ── */
+/* ── GALLERY MODAL (original grid style) ── */
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;max-height:420px;overflow-y:auto;padding-right:2px;}
+.gallery-grid::-webkit-scrollbar{width:4px;}
+.gallery-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.gallery-item{position:relative;cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;}
+.gallery-item:hover{border-color:var(--gold);}
+.gallery-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.gallery-item canvas{width:100%;height:100%;display:block;background:#111;}
+.gallery-item .gal-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#1a1a1a;font-size:28px;}
+.gallery-item .gal-placeholder span{font-size:9px;color:var(--text2);font-family:'JetBrains Mono',monospace;word-break:break-all;padding:0 4px;text-align:center;}
+.gallery-item .gal-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.8);color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1.4;z-index:2;}
+.gallery-item:hover .gal-del{opacity:1;}
+.gallery-item .gal-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 5px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;text-align:center;pointer-events:none;}
+.gallery-empty{color:var(--text2);font-size:12px;text-align:center;padding:24px 10px;grid-column:1/-1;line-height:1.6;}
+
+/* ── GALLERY PANEL (side panel list style) ── */
 .gal-list{display:flex;flex-direction:column;gap:8px;}
 .gal-row{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
 .gal-row:hover{border-color:var(--gold);}
@@ -256,7 +283,6 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
   .header-actions { gap: 4px; flex-wrap: wrap; }
   .btn { padding: 4px 9px; font-size: 11px; }
   .main { display: flex; flex-direction: column; height: auto; overflow: visible; }
-  .main.panel4-open { display: flex; }
 
   .panel-left {
     border-right: none; border-bottom: 1px solid var(--border);
@@ -284,7 +310,19 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
 
   .float-btns { bottom: 12px; right: 12px; }
   .float-btn { width: 42px; height: 42px; font-size: 18px; }
-  .panel-four { width: 100% !important; border-left: none; border-top: 1px solid var(--border); }
+  /* Mobile: panel-four as bottom drawer */
+  .panel-four {
+    top:auto; right:0; bottom:0; left:0;
+    width:100% !important;
+    height:60vh;
+    border-left:none;
+    border-top:1px solid var(--border);
+    box-shadow:0 -4px 20px rgba(0,0,0,.3);
+    transform:translateY(100%);
+    transition:transform .22s cubic-bezier(.4,0,.2,1);
+  }
+  .panel-four.open{transform:translateY(0);}
+  .float-btns-merged{bottom:16px;right:16px;}
 }
 </style>
 </head>
@@ -375,22 +413,28 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
   </div>
   <div id="preview"><p style="color:#aaa;font-size:13px;text-align:center;margin-top:50px;" data-i18n="previewHint">← 從左側選擇標籤開始</p></div>
 
-  <!-- Floating buttons -->
-  <div class="float-btns" id="floatBtns">
-    <button class="float-btn float-btn-gallery" id="floatGallery" onclick="togglePanel4('gallery')" title="圖庫">🗂</button>
-    <button class="float-btn float-btn-draft" id="floatDraft" onclick="togglePanel4('draft')" title="草稿">📝</button>
+  <!-- Floating buttons (split mode — inside panelRight) -->
+  <div class="float-btns" id="floatBtnsSplit">
+    <button class="float-btn float-btn-gallery" id="floatGallerySplit" onclick="togglePanel4('gallery')" title="圖庫">🗂</button>
+    <button class="float-btn float-btn-draft" id="floatDraftSplit" onclick="togglePanel4('draft')" title="草稿">📝</button>
   </div>
 </div>
-
-  <!-- ═══ PANEL 4 (gallery / draft) ═══ -->
-  <div class="panel-four" id="panelFour" style="display:none;">
-    <div class="p4-header">
-      <h3 id="p4Title">圖庫</h3>
-      <button class="btn btn-ghost btn-sm" onclick="closePanel4()">✕</button>
-    </div>
-    <div class="p4-body" id="p4Body"></div>
-  </div>
 </div><!-- end .main -->
+
+<!-- ═══ PANEL 4 (gallery / draft) — outside .main, sibling at body level ═══ -->
+<div class="panel-four" id="panelFour" style="display:none;">
+  <div class="p4-header">
+    <h3 id="p4Title">圖庫</h3>
+    <button class="btn btn-ghost btn-sm" onclick="closePanel4()">✕</button>
+  </div>
+  <div class="p4-body" id="p4Body"></div>
+</div>
+
+<!-- Floating buttons (merged mode — fixed position, shown when panelRight hidden) -->
+<div class="float-btns float-btns-merged" id="floatBtnsMerged" style="display:none;">
+  <button class="float-btn float-btn-gallery" id="floatGalleryMerged" onclick="togglePanel4('gallery')" title="圖庫">🗂</button>
+  <button class="float-btn float-btn-draft" id="floatDraftMerged" onclick="togglePanel4('draft')" title="草稿">📝</button>
+</div>
 
 
 <!-- ═══ MODAL ═══ -->
@@ -510,8 +554,61 @@ function clearGallery(){
   if(!gallery.length){showToast('圖庫已是空的');return;}
   if(!confirm('確定要清空所有圖庫暫存嗎？此操作無法復原。'))return;
   gallery=[];saveGallery();
+  // Update modal gallery if open
+  const grid=document.getElementById('galGrid');
+  if(grid)renderGallery(grid);
+  // Update side panel if open
   if(currentPanel4==='gallery')renderPanel4Gallery();
   showToast('🗑 已清空圖庫');
+}
+
+/* Original modal gallery (3-col grid) */
+function renderGallery(container){
+  container.innerHTML='';
+  const counter=document.getElementById('galCounter');
+  if(counter)counter.textContent=`${gallery.length}/${MAX_GALLERY}`;
+  if(!gallery.length){container.innerHTML='<div class="gallery-empty">尚無已儲存的圖片/影片連結<br><span style="font-size:10px;opacity:.7;">上傳或插入圖片/影片後會自動記錄</span></div>';return;}
+  const GAP=8,COLS=3;
+  const cw=container.getBoundingClientRect().width||container.offsetWidth||300;
+  const cellPx=Math.floor((cw-GAP*(COLS-1))/COLS);
+  gallery.forEach((g,i)=>{
+    const d=document.createElement('div');
+    d.className='gallery-item';
+    d.style.height=cellPx+'px';
+    const delBtn=`<button class="gal-del" title="移除">✕</button>`;
+    const shortName=g.url.split('/').pop().split('?')[0].slice(0,20)||g.url.slice(0,20);
+    if(g.type==='img'){
+      d.innerHTML=`<img src="${g.url}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentElement.innerHTML='<div class=\\'gal-placeholder\\'><span style=\\'font-size:26px;\\'>🖼</span><span>${shortName}</span></div>'+\`${delBtn}\`">${delBtn}<div class="gal-label">${shortName}</div>`;
+      d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
+    } else if(g.type==='vid'){
+      const vidIdx='gvc'+i+'_'+Date.now();
+      d.innerHTML=`<canvas id="${vidIdx}" style="width:100%;height:100%;display:block;background:#111;"></canvas><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;pointer-events:none;text-shadow:0 1px 4px #000;">▶</div>${delBtn}<div class="gal-label">${shortName}</div>`;
+      (function(url,cid){setTimeout(()=>{const cv=document.getElementById(cid);if(!cv)return;const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.crossOrigin='anonymous';v.addEventListener('loadeddata',()=>{v.currentTime=0.5;});v.addEventListener('seeked',()=>{const sz=120;cv.width=sz;cv.height=sz;cv.getContext('2d').drawImage(v,0,0,sz,sz);v.remove();});v.addEventListener('error',()=>{if(cv.parentElement)cv.parentElement.innerHTML=`<div class="gal-placeholder"><span>🎞</span><span>${shortName}</span></div>${delBtn}`;});v.load();},150);})(g.url,vidIdx);
+      d.onclick=()=>{insertAtCursor(`[xmp4]${g.url}[/xmp4]\n`);closeModal();};
+    } else if(g.type==='sendvid'){
+      d.innerHTML=`<div class="gal-placeholder" style="background:#0a1628;">📺<span>${g.url}</span></div>${delBtn}<div class="gal-label">Sendvid</div>`;
+      d.onclick=()=>{insertAtCursor(`[xsendvid]${g.url}[/xsendvid]\n`);closeModal();};
+    } else if(g.type==='yt'){
+      const ytId=g.url.replace(/\s/g,'');
+      d.innerHTML=`<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;">${delBtn}<div class="gal-label">YouTube</div>`;
+      d.onclick=()=>{insertAtCursor(`[xyoutube]${g.url}[/xyoutube]\n`);closeModal();};
+    } else if(g.type==='tt'){
+      d.innerHTML=`<div class="gal-placeholder" style="background:#111;">🎶<span>${g.url}</span></div>${delBtn}<div class="gal-label">TikTok</div>`;
+      d.onclick=()=>{insertAtCursor(`[xtiktok]${g.url}[/xtiktok]\n`);closeModal();};
+    } else {
+      d.innerHTML=`<div class="gal-placeholder">📎<span>${shortName}</span></div>${delBtn}`;
+      d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
+    }
+    d.title=g.url;
+    // Delete button handler
+    d.querySelector('.gal-del').addEventListener('click',e=>{
+      e.stopPropagation();
+      gallery.splice(i,1);saveGallery();
+      const g2=document.getElementById('galGrid');if(g2)renderGallery(g2);
+      if(currentPanel4==='gallery')renderPanel4Gallery();
+    });
+    container.appendChild(d);
+  });
 }
 
 function renderPanel4Gallery(){
@@ -639,36 +736,33 @@ function renderPanel4Draft(){
 }
 
 /* ═══════════════════════════════════════════
-   PANEL 4 TOGGLE
+   PANEL 4 TOGGLE (fixed sidebar, always right)
 ═══════════════════════════════════════════ */
 let currentPanel4=null; // 'gallery' | 'draft' | null
 
+function _setFloatActive(type){
+  // Update both sets of float buttons
+  ['Split','Merged'].forEach(mode=>{
+    const g=document.getElementById('floatGallery'+mode);
+    const d=document.getElementById('floatDraft'+mode);
+    if(g)g.classList.toggle('active',type==='gallery');
+    if(d)d.classList.toggle('active',type==='draft');
+  });
+}
+
 function togglePanel4(type){
   const p4=document.getElementById('panelFour');
-  const main=document.getElementById('mainGrid');
-  const gBtn=document.getElementById('floatGallery');
-  const dBtn=document.getElementById('floatDraft');
 
   if(currentPanel4===type){
-    // same button → close
     closePanel4();
     return;
   }
-  // open or switch
   currentPanel4=type;
   p4.style.display='flex';
+  // Use rAF so display:flex takes effect before transition
+  requestAnimationFrame(()=>{ p4.classList.add('open'); });
 
-  // inject panel4 into main grid if not already
-  if(!main.contains(p4)){
-    main.appendChild(p4);
-  }
-
-  if(window.innerWidth>768){
-    main.classList.add('panel4-open');
-  }
-
-  gBtn.classList.toggle('active',type==='gallery');
-  dBtn.classList.toggle('active',type==='draft');
+  _setFloatActive(type);
 
   if(type==='gallery'){
     document.getElementById('p4Title').textContent='🗂 圖庫';
@@ -681,12 +775,11 @@ function togglePanel4(type){
 
 function closePanel4(){
   const p4=document.getElementById('panelFour');
-  const main=document.getElementById('mainGrid');
-  p4.style.display='none';
-  main.classList.remove('panel4-open');
+  p4.classList.remove('open');
+  // Wait for transition then hide
+  p4.addEventListener('transitionend',()=>{ p4.style.display='none'; },{once:true});
   currentPanel4=null;
-  document.getElementById('floatGallery').classList.remove('active');
-  document.getElementById('floatDraft').classList.remove('active');
+  _setFloatActive(null);
 }
 
 /* ═══════════════════════════════════════════
@@ -862,14 +955,23 @@ function toggleSplitMerge(){
   const main=document.getElementById('mainGrid');
   const splitBtn=document.getElementById('splitMergeBtn');
   const previewBtn=document.getElementById('previewToggleBtn');
+  const splitFloat=document.getElementById('floatBtnsSplit');
+  const mergedFloat=document.getElementById('floatBtnsMerged');
+
   if(isMerged){
     panelRight.style.display='none';
-    if(window.innerWidth>768) main.style.gridTemplateColumns=currentPanel4?'240px 1fr 320px':'240px 1fr';
+    // Show merged-mode fixed float btns, hide split ones
+    if(splitFloat)splitFloat.style.display='none';
+    if(mergedFloat)mergedFloat.style.display='flex';
+    if(window.innerWidth>768) main.style.gridTemplateColumns='240px 1fr';
     splitBtn.textContent='分欄';previewBtn.style.display='';
     if(window.innerWidth<=768)main.style.gridTemplateColumns='1fr';
   } else {
     panelRight.style.display='';
-    if(window.innerWidth>768) main.style.gridTemplateColumns=currentPanel4?'240px 1fr 1fr 320px':'240px 1fr 1fr';
+    // Restore split-mode float btns
+    if(splitFloat)splitFloat.style.display='flex';
+    if(mergedFloat)mergedFloat.style.display='none';
+    if(window.innerWidth>768) main.style.gridTemplateColumns='240px 1fr 1fr';
     splitBtn.textContent='合併';previewBtn.style.display='none';
     const overlay=document.getElementById('previewOverlay');
     if(overlay)overlay.style.display='none';
@@ -897,6 +999,9 @@ function showMergedPreview(){
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
+  // Hide merged-mode float btns by default (split is default)
+  const mergedFloat=document.getElementById('floatBtnsMerged');
+  if(mergedFloat)mergedFloat.style.display='none';
   if(window.innerWidth<=768){setTimeout(toggleSplitMerge,50);}
 });
 
@@ -1007,6 +1112,7 @@ function buildLeftPanel(){
       {tag:'ximg',icon:'🖼',label:lang==='zh'?'插入圖片連結':'Insert Image URL',code:'ximg',modal:true},
       {tag:'postimages',icon:'📤',label:lang==='zh'?'Postimages 上傳':'Postimages Upload',code:'半自動',modal:true,gold:true},
       {tag:'catbox',icon:'🐱',label:lang==='zh'?'貓盒 Catbox':'Catbox',code:'半自動',modal:true,gold:true},
+      {tag:'gallery',icon:'🗂',label:lang==='zh'?'圖庫':'Gallery',code:'gallery',modal:true,gold:false},
     ]},
     {key:'dialog',title:lang==='zh'?'💬 對話':'💬 Dialog',tags:[
       {tag:'dialog',icon:'🗨',label:lang==='zh'?'對話泡泡':'Chat Bubbles',code:'xleft/xright',modal:true},
@@ -1145,6 +1251,18 @@ function openModal(tag){
       document.getElementById('modalOK').textContent='插入';
       setTimeout(()=>{ setCatboxType('img'); },30);
       break;
+    case 'gallery':
+      html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;">
+        <span style="font-size:11px;color:var(--text2);flex:1;">點選圖片/影片即可插入文章使用。圖庫會儲存最新${MAX_GALLERY}項在此裝置，同裝置重新開啟仍可使用。</span>
+        <span id="galCounter" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--gold);white-space:nowrap;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 8px;">0/${MAX_GALLERY}</span>
+      </div>
+      <div class="gallery-grid" id="galGrid"></div>
+      <div style="margin-top:10px;text-align:right;">
+        <button class="btn btn-ghost" style="font-size:11px;color:#e06c75;border-color:#e06c75;" onclick="clearGallery()">🗑 清空圖庫</button>
+      </div>`;
+      document.getElementById('modalOK').style.display='none';
+      document.getElementById('modalActions').style.display='none';
+      break;
     case 'dialog':
       html=`<div style="font-size:11px;color:var(--text2);margin-bottom:10px;">點「+ 新增對話」加入訊息，可選左側或右側，可自由刪除。</div>
       <div id="dialogRows" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;padding-right:4px;"></div>
@@ -1198,6 +1316,7 @@ function openModal(tag){
   document.getElementById('modalBody').innerHTML=html;
   overlay.classList.add('active');
   setTimeout(()=>{
+    if(tag==='gallery')renderGallery(document.getElementById('galGrid'));
     if(tag==='xtable'){initTable(2);}
     if(tag==='colorpicker'){document.getElementById('colorCustom').addEventListener('input',e=>{selectColor(e.target.value);});}
     const f=document.getElementById('f1')||document.getElementById('piUrl')||document.getElementById('tblHead');
@@ -1325,7 +1444,7 @@ function confirmInsert(){
 function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
 function closeModalOverlay(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closePanel4();}
+  if(e.key==='Escape'){closeModal();if(currentPanel4)closePanel4();}
   if(e.key==='Enter'&&document.getElementById('modalOverlay').classList.contains('active')){
     const a=document.activeElement;
     if(a&&a.tagName!=='TEXTAREA'&&a.tagName!=='SELECT'&&!a.classList.contains('tbl-add-btn')&&a.id!=='modalOK'){e.preventDefault();confirmInsert();}
