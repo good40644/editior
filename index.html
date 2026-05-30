@@ -358,8 +358,8 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
   }
   .editor-footer { flex-shrink:0; }
 
-  /* ── 預覽區隱藏（合併模式），由 toggleSplitMerge 控制 ── */
-  .panel-right { display:none; }
+  /* ── 預覽區：手機預設隱藏，由 JS toggleSplitMerge 控制 ── */
+  /* 不在此寫 display:none，改由 JS 設定，避免分欄時無法覆蓋 */
   #preview { padding:12px 14px; font-size:13px; -webkit-overflow-scrolling:touch; }
 
   .modal { width:95vw; padding:16px; }
@@ -559,8 +559,6 @@ function redoAction(){if(undoPtr<undoStack.length-1){undoPtr++;editor.value=undo
 function handleKeyDown(e){
   if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undoAction();}
   if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();redoAction();}
-  // Smart auto-close BBCode tags
-  smartAutoClose(e);
   // Force undo checkpoint on Space / Enter / punctuation
   const forceKeys=['Enter',' ','.','。','!','！','?','？',',','，'];
   if(forceKeys.includes(e.key)){
@@ -573,41 +571,7 @@ function handleKeyDown(e){
    當使用者手動輸入 [b] 時自動補上 [/b]
    游標停在兩個標籤中間
 ═══════════════════════════════════════════ */
-const AUTO_CLOSE_TAGS=[
-  'b','i','u','strike','xgold','xcenter','xgban','xnote','xwarn',
-  'xblue','xgreen','xred','xinfo','xglass','xsmall','xquote','quote',
-  'xtag','xrate','xbtn','xspoiler','xcard','ximg','xmp4','xvmp4',
-  'xmp3','xsound','xsendvid','xmap','xmaplink','xyoutube','xsyoutube',
-  'xtiktok','hide','sell','fly','move','code','url',
-  'size','color','backcolor','align','xleft','xright',
-];
-
-function smartAutoClose(e){
-  // 只在輸入 ] 時觸發
-  if(e.key!==']') return;
-  // 用 setTimeout 等輸入完成
-  setTimeout(()=>{
-    const pos=editor.selectionStart;
-    const before=editor.value.slice(0,pos);
-    // 抓最後一個 [ 開頭的標籤（排除已是關閉標籤 [/...] 的情況）
-    const tagMatch=before.match(/\[([a-zA-Z][a-zA-Z0-9]*)(?:=[^\]]+)?]$/);
-    if(!tagMatch) return;
-    const tagName=tagMatch[1].toLowerCase();
-    if(!AUTO_CLOSE_TAGS.includes(tagName)) return;
-    // 確認後面還沒有對應的關閉標籤
-    const after=editor.value.slice(pos);
-    const closeTag=`[/${tagName}]`;
-    if(after.startsWith(closeTag)) return; // 已有，不重複
-    // 插入關閉標籤，游標停在中間
-    pushUndo(editor.value);
-    const before2=editor.value.slice(0,pos);
-    const after2=editor.value.slice(pos);
-    editor.value=before2+closeTag+after2;
-    editor.selectionStart=editor.selectionEnd=pos;
-    try{localStorage.setItem('liujin_editor_content',editor.value);}catch(ex){}
-    updatePreview();updateStats();
-  },0);
-}
+function smartAutoClose(e){ /* 已移至 input 事件，此函數保留為空 */ }
 let isComposing=false;
 function onEditorInput(){
   if(isComposing)return;
@@ -891,6 +855,38 @@ let savedSel={start:0,end:0,text:''};
 // Track if the last change was a cut operation
 let lastWasCut=false;
 
+/* ═══════════════════════════════════════════
+   SMART BBCode AUTO-CLOSE
+   輸入 [b] 自動補 [/b]，游標停在中間
+   用 input 事件，相容中文輸入法
+═══════════════════════════════════════════ */
+const AUTO_CLOSE_TAGS=[
+  'b','i','u','strike','xgold','xcenter','xgban','xnote','xwarn',
+  'xblue','xgreen','xred','xinfo','xglass','xsmall','xquote','quote',
+  'xtag','xrate','xbtn','xspoiler','xcard','ximg','xmp4','xvmp4',
+  'xmp3','xsound','xsendvid','xmap','xmaplink','xyoutube','xsyoutube',
+  'xtiktok','hide','sell','fly','move','code','url',
+  'size','color','backcolor','align','xleft','xright',
+];
+editor.addEventListener('input',()=>{
+  if(isComposing) return;
+  const pos=editor.selectionStart;
+  const before=editor.value.slice(0,pos);
+  if(!before.endsWith(']')) return;
+  const tagMatch=before.match(/\[([a-zA-Z][a-zA-Z0-9]*)(?:=[^\]]+)?]$/);
+  if(!tagMatch) return;
+  const tagName=tagMatch[1].toLowerCase();
+  if(!AUTO_CLOSE_TAGS.includes(tagName)) return;
+  const after=editor.value.slice(pos);
+  const closeTag=`[/${tagName}]`;
+  if(after.startsWith(closeTag)) return;
+  pushUndo(editor.value);
+  editor.value=before+closeTag+after;
+  editor.selectionStart=editor.selectionEnd=pos;
+  try{localStorage.setItem('liujin_editor_content',editor.value);}catch(ex){}
+  updatePreview();updateStats();
+});
+
 editor.addEventListener('cut',()=>{
   lastWasCut=true;
   // After cut, clear saved selection since content is gone
@@ -1058,25 +1054,35 @@ function toggleSplitMerge(){
   const previewBtn=document.getElementById('previewToggleBtn');
   const splitFloat=document.getElementById('floatBtnsSplit');
   const mergedFloat=document.getElementById('floatBtnsMerged');
+  const isMobile=window.innerWidth<=768;
 
   if(isMerged){
+    // 合併模式：隱藏預覽欄
     panelRight.style.display='none';
-    // Show merged-mode fixed float btns, hide split ones
     if(splitFloat)splitFloat.style.display='none';
     if(mergedFloat)mergedFloat.style.display='flex';
-    if(window.innerWidth>768) main.style.gridTemplateColumns='240px 1fr';
-    splitBtn.textContent='分欄';previewBtn.style.display='';
-    if(window.innerWidth<=768)main.style.gridTemplateColumns='1fr';
+    if(!isMobile) main.style.gridTemplateColumns='240px 1fr';
+    else main.style.gridTemplateColumns='1fr';
+    splitBtn.textContent='分欄';
+    previewBtn.style.display='';
   } else {
-    panelRight.style.display='';
-    // Restore split-mode float btns
+    // 分欄模式：顯示預覽欄
+    // 手機必須明確 display:flex，因為 CSS media 有 display:none
+    panelRight.style.display='flex';
+    panelRight.style.flexDirection='column';
+    panelRight.style.minHeight=isMobile?'40vh':'';
+    panelRight.style.borderTop=isMobile?'1px solid var(--border)':'';
     if(splitFloat)splitFloat.style.display='flex';
     if(mergedFloat)mergedFloat.style.display='none';
-    if(window.innerWidth>768) main.style.gridTemplateColumns='240px 1fr 1fr';
-    splitBtn.textContent='合併';previewBtn.style.display='none';
+    if(!isMobile) main.style.gridTemplateColumns='240px 1fr 1fr';
+    else {
+      // 手機分欄：編輯器與預覽上下各半
+      main.style.gridTemplateColumns='1fr';
+    }
+    splitBtn.textContent='合併';
+    previewBtn.style.display='none';
     const overlay=document.getElementById('previewOverlay');
     if(overlay)overlay.style.display='none';
-    if(window.innerWidth<=768)main.style.gridTemplateColumns='1fr';
   }
 }
 
@@ -1103,7 +1109,9 @@ window.addEventListener('DOMContentLoaded',()=>{
   const mergedFloat=document.getElementById('floatBtnsMerged');
   if(mergedFloat)mergedFloat.style.display='none';
   if(window.innerWidth<=768){
-    // 手機：預設合併模式，預覽欄隱藏
+    // 手機：預先隱藏預覽欄，再切換到合併模式
+    const panelRight=document.getElementById('panelRight');
+    if(panelRight)panelRight.style.display='none';
     setTimeout(()=>{
       if(!isMerged) toggleSplitMerge();
     },50);
