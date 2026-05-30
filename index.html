@@ -891,10 +891,40 @@ function tryAutoClose(){
   updatePreview();updateStats();
 }
 
-// keyup 偵測 ] 鍵（直接鍵盤輸入）
+// keyup 偵測兩種情況：
+// 1. 打 ] 結尾 → 直接觸發
+// 2. 游標後面緊接 ] → 打字母/數字時也觸發（處理先打[]再移進去打標籤名的情況）
 editor.addEventListener('keyup',e=>{
   if(isComposing) return;
-  if(e.key===']') tryAutoClose();
+  if(e.key===']'){
+    tryAutoClose();
+    return;
+  }
+  // 游標後方是 ] 且輸入的是字母/數字/= → 也嘗試觸發
+  if(/^[a-zA-Z0-9=/]$/.test(e.key)){
+    const pos=editor.selectionStart;
+    const after=editor.value.slice(pos);
+    if(after.startsWith(']')){
+      // 模擬游標在 ] 之後再檢查
+      const fakeBefore=editor.value.slice(0,pos)+']';
+      const tagMatch=fakeBefore.match(/\[([a-zA-Z][a-zA-Z0-9]*)(?:=[^\]]+)?]$/);
+      if(tagMatch){
+        const tagName=tagMatch[1].toLowerCase();
+        if(AUTO_CLOSE_TAGS.includes(tagName)){
+          const realAfter=editor.value.slice(pos+1); // 跳過那個 ]
+          const closeTag=`[/${tagName}]`;
+          if(!realAfter.startsWith(closeTag)){
+            pushUndo(editor.value);
+            const insertPos=pos+1; // ] 之後
+            editor.value=editor.value.slice(0,insertPos)+closeTag+editor.value.slice(insertPos);
+            editor.selectionStart=editor.selectionEnd=pos; // 游標留在 ] 前（標籤內容區）
+            try{localStorage.setItem('liujin_editor_content',editor.value);}catch(ex){}
+            updatePreview();updateStats();
+          }
+        }
+      }
+    }
+  }
 });
 
 // input 偵測貼上或虛擬鍵盤（inputType = insertText 且最後字元是 ]）
