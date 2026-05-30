@@ -2,7 +2,7 @@
 <html lang="zh-TW" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>流金編輯器</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -291,53 +291,93 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
    MOBILE RESPONSIVE
 ══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  body { height: auto; overflow: auto; }
-  header { padding: 8px 12px; gap: 8px; }
-  .logo { font-size: 15px; }
-  .hint-badge { display: none; }
-  .header-actions { gap: 4px; flex-wrap: wrap; }
-  .btn { padding: 4px 9px; font-size: 11px; }
-  .main { display: flex; flex-direction: column; height: auto; overflow: visible; }
+  /* ── 固定版面，不隨鍵盤縮放 ── */
+  body { height:100vh; overflow:hidden; }
+  header { padding:7px 10px; gap:6px; flex-wrap:nowrap; overflow-x:auto; }
+  header::-webkit-scrollbar{ display:none; }
+  .logo { font-size:14px; flex-shrink:0; }
+  .hint-badge { display:none; }
+  .header-actions { gap:3px; flex-wrap:nowrap; flex-shrink:0; }
+  .btn { padding:4px 8px; font-size:10px; white-space:nowrap; }
 
-  .panel-left {
-    border-right: none; border-bottom: 1px solid var(--border);
-    overflow-x: auto; overflow-y: hidden; display: flex;
-    flex-direction: row; max-height: none; padding: 6px 4px; gap: 0;
+  /* ── 主版面：固定高度 flex 直排 ── */
+  .main {
+    display:flex; flex-direction:column;
+    height:calc(100vh - 48px); /* 100vh 扣掉 header */
+    overflow:hidden;
   }
-  .section-group { display: flex; flex-direction: row; align-items: stretch; border-bottom: none; border-right: 1px solid var(--border); flex-shrink: 0; }
-  .section-header { display: none; }
-  .section-body { display: flex !important; flex-direction: row; overflow-x: visible; align-items: center; }
-  .section-body.hidden { display: flex !important; }
-  .tag-btn { flex-direction: column; gap: 2px; padding: 6px 8px; min-width: 52px; border-left: none; border-bottom: 2px solid transparent; font-size: 11px; white-space: nowrap; }
-  .tag-btn:hover { border-left: none; border-bottom-color: var(--gold); }
-  .tag-btn .code { display: none; }
-  .tag-btn .wrap-hint { display: none !important; }
-  .tag-btn .icon { font-size: 16px; }
-  .tag-btn .label { font-size: 10px; }
 
-  .panel-mid { height: auto; min-height: 260px; }
-  .format-toolbar { gap: 2px; padding: 4px 6px; }
-  .fmt-btn { padding: 3px 7px; font-size: 11px; }
-  textarea#editor { min-height: 200px; height: 200px; flex: none; overflow-y: auto; }
-  .panel-right { border-top: 1px solid var(--border); }
-  #preview { padding: 12px 14px; font-size: 13px; }
-  .modal { width: 95vw; padding: 16px; }
+  /* ── 左側面板：橫向捲動工具列 ── */
+  .panel-left {
+    border-right:none; border-bottom:1px solid var(--border);
+    overflow-x:auto; overflow-y:hidden;
+    display:flex; flex-direction:row;
+    max-height:72px; min-height:60px;
+    flex-shrink:0;
+    padding:4px 6px; gap:0;
+    scroll-behavior:smooth;
+    -webkit-overflow-scrolling:touch;
+  }
+  .panel-left::-webkit-scrollbar{ display:none; }
+  .section-group {
+    display:flex; flex-direction:row; align-items:stretch;
+    border-bottom:none; border-right:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .section-header { display:none; }
+  .section-body { display:flex !important; flex-direction:row; align-items:center; }
+  .section-body.hidden { display:flex !important; }
+  .tag-btn {
+    flex-direction:column; gap:2px;
+    padding:6px 10px; min-width:54px;
+    border-left:none; border-bottom:2px solid transparent;
+    font-size:10px; white-space:nowrap;
+    touch-action:manipulation; /* 防止 300ms 延遲 & 誤觸 */
+  }
+  .tag-btn:hover { border-left:none; border-bottom-color:var(--gold); }
+  .tag-btn .code { display:none; }
+  .tag-btn .wrap-hint { display:none !important; }
+  .tag-btn .icon { font-size:17px; }
+  .tag-btn .label { font-size:10px; }
 
-  .float-btns { bottom: 12px; right: 12px; }
-  .float-btn { width: 42px; height: 42px; font-size: 18px; }
-  /* Mobile: panel-four as bottom drawer */
+  /* ── 中間編輯區：flex:1 填滿剩餘空間，textarea 獨立捲動 ── */
+  .panel-mid {
+    flex:1; min-height:0;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .format-toolbar { gap:2px; padding:4px 6px; flex-shrink:0; overflow-x:auto; flex-wrap:nowrap; }
+  .format-toolbar::-webkit-scrollbar{ display:none; }
+  .fmt-btn { padding:3px 7px; font-size:11px; flex-shrink:0; touch-action:manipulation; }
+  textarea#editor {
+    flex:1; min-height:0;
+    height:auto !important;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    /* 防止 iOS 自動縮放輸入框 */
+    font-size:16px !important;
+  }
+  .editor-footer { flex-shrink:0; }
+
+  /* ── 預覽區隱藏（合併模式），由 toggleSplitMerge 控制 ── */
+  .panel-right { display:none; }
+  #preview { padding:12px 14px; font-size:13px; -webkit-overflow-scrolling:touch; }
+
+  .modal { width:95vw; padding:16px; }
+
+  .float-btns { bottom:12px; right:12px; }
+  .float-btn { width:44px; height:44px; font-size:18px; touch-action:manipulation; }
+
+  /* ── Panel 4：底部抽屜 ── */
   .panel-four {
     top:auto; right:0; bottom:0; left:0;
-    width:100% !important;
-    height:60vh;
-    border-left:none;
-    border-top:1px solid var(--border);
+    width:100% !important; height:65vh;
+    border-left:none; border-top:1px solid var(--border);
     box-shadow:0 -4px 20px rgba(0,0,0,.3);
     transform:translateY(100%);
     transition:transform .22s cubic-bezier(.4,0,.2,1);
   }
-  .panel-four.open{transform:translateY(0);}
-  .float-btns-merged{bottom:16px;right:16px;}
+  .panel-four.open { transform:translateY(0); }
+  .float-btns-merged { bottom:16px; right:16px; }
 }
 </style>
 </head>
@@ -519,14 +559,60 @@ function redoAction(){if(undoPtr<undoStack.length-1){undoPtr++;editor.value=undo
 function handleKeyDown(e){
   if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undoAction();}
   if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();redoAction();}
+  // Smart auto-close BBCode tags
+  smartAutoClose(e);
+  // Force undo checkpoint on Space / Enter / punctuation
+  const forceKeys=['Enter',' ','.','。','!','！','?','？',',','，'];
+  if(forceKeys.includes(e.key)){
+    clearTimeout(undoTimer);
+    undoTimer=setTimeout(()=>pushUndo(editor.value),50);
+  }
 }
-let undoTimer;
-let saveEditorTimer;
+/* ═══════════════════════════════════════════
+   SMART BBCode AUTO-CLOSE
+   當使用者手動輸入 [b] 時自動補上 [/b]
+   游標停在兩個標籤中間
+═══════════════════════════════════════════ */
+const AUTO_CLOSE_TAGS=[
+  'b','i','u','strike','xgold','xcenter','xgban','xnote','xwarn',
+  'xblue','xgreen','xred','xinfo','xglass','xsmall','xquote','quote',
+  'xtag','xrate','xbtn','xspoiler','xcard','ximg','xmp4','xvmp4',
+  'xmp3','xsound','xsendvid','xmap','xmaplink','xyoutube','xsyoutube',
+  'xtiktok','hide','sell','fly','move','code','url',
+  'size','color','backcolor','align','xleft','xright',
+];
+
+function smartAutoClose(e){
+  // 只在輸入 ] 時觸發
+  if(e.key!==']') return;
+  // 用 setTimeout 等輸入完成
+  setTimeout(()=>{
+    const pos=editor.selectionStart;
+    const before=editor.value.slice(0,pos);
+    // 抓最後一個 [ 開頭的標籤（排除已是關閉標籤 [/...] 的情況）
+    const tagMatch=before.match(/\[([a-zA-Z][a-zA-Z0-9]*)(?:=[^\]]+)?]$/);
+    if(!tagMatch) return;
+    const tagName=tagMatch[1].toLowerCase();
+    if(!AUTO_CLOSE_TAGS.includes(tagName)) return;
+    // 確認後面還沒有對應的關閉標籤
+    const after=editor.value.slice(pos);
+    const closeTag=`[/${tagName}]`;
+    if(after.startsWith(closeTag)) return; // 已有，不重複
+    // 插入關閉標籤，游標停在中間
+    pushUndo(editor.value);
+    const before2=editor.value.slice(0,pos);
+    const after2=editor.value.slice(pos);
+    editor.value=before2+closeTag+after2;
+    editor.selectionStart=editor.selectionEnd=pos;
+    try{localStorage.setItem('liujin_editor_content',editor.value);}catch(ex){}
+    updatePreview();updateStats();
+  },0);
+}
 let isComposing=false;
 function onEditorInput(){
   if(isComposing)return;
   clearTimeout(undoTimer);
-  undoTimer=setTimeout(()=>pushUndo(editor.value),400);
+  undoTimer=setTimeout(()=>pushUndo(editor.value),800);
   // Auto-save to localStorage
   clearTimeout(saveEditorTimer);
   saveEditorTimer=setTimeout(()=>{
@@ -1014,10 +1100,14 @@ function showMergedPreview(){
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
-  // Hide merged-mode float btns by default (split is default)
   const mergedFloat=document.getElementById('floatBtnsMerged');
   if(mergedFloat)mergedFloat.style.display='none';
-  if(window.innerWidth<=768){setTimeout(toggleSplitMerge,50);}
+  if(window.innerWidth<=768){
+    // 手機：預設合併模式，預覽欄隱藏
+    setTimeout(()=>{
+      if(!isMerged) toggleSplitMerge();
+    },50);
+  }
 });
 
 /* ═══════════════════════════════════════════
