@@ -1454,7 +1454,7 @@ function cbHandleFiles(files){
   [...files].forEach(file=>cbUploadOne(file));
 }
 
-function cbUploadOne(file){
+async function cbUploadOne(file){
   const isVideo=/\.(mp4|mov|webm)$/i.test(file.name);
   const isImg=/\.(jpe?g|png|gif|webp|bmp)$/i.test(file.name);
   if(!isVideo&&!isImg){showToast(`⚠️ 不支援的格式：${file.name}`);return;}
@@ -1463,6 +1463,7 @@ function cbUploadOne(file){
   // Build queue item
   const id='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
   const queue=document.getElementById('cbQueue');
+  if(!queue)return;
   const div=document.createElement('div');
   div.className='cb-item';div.id=id;
 
@@ -1485,54 +1486,43 @@ function cbUploadOne(file){
   queue.appendChild(div);
   queue.scrollTop=queue.scrollHeight;
 
-  // Upload via XHR so we get progress
-  const fd=new FormData();
-  fd.append('reqtype','fileupload');
-  fd.append('fileToUpload',file);
+  const st=document.getElementById(id+'_st');
+  const bar=document.getElementById(id+'_bar');
+  const result=document.getElementById(id+'_result');
 
-  const xhr=new XMLHttpRequest();
-  xhr.open('POST',CATBOX_API);
+  try{
+    if(st){st.textContent='⬆️ 上傳中…';st.style.color='var(--text2)';}
+    if(bar){bar.style.width='60%';} // indeterminate progress
 
-  xhr.upload.addEventListener('progress',e=>{
-    if(e.lengthComputable){
-      const pct=Math.round(e.loaded/e.total*100);
-      const bar=document.getElementById(id+'_bar');
-      const st=document.getElementById(id+'_st');
-      if(bar)bar.style.width=pct+'%';
-      if(st)st.textContent=`⬆️ 上傳中… ${pct}%`;
+    const fd=new FormData();
+    fd.append('reqtype','fileupload');
+    fd.append('fileToUpload',file);
+
+    const res=await fetch(CATBOX_API,{method:'POST',body:fd});
+    const text=(await res.text()).trim();
+
+    if(!text.startsWith('https://')){
+      throw new Error(text||'伺服器回傳錯誤');
     }
-  });
 
-  xhr.addEventListener('load',()=>{
-    const st=document.getElementById(id+'_st');
-    const bar=document.getElementById(id+'_bar');
-    const result=document.getElementById(id+'_result');
-    if(xhr.status===200&&xhr.responseText.startsWith('https://')){
-      const url=xhr.responseText.trim();
-      if(bar){bar.style.width='100%';bar.style.background='#22c55e';}
-      if(st){st.textContent='✅ 上傳成功！';st.style.color='#22c55e';}
-      if(result){
-        result.innerHTML=`<div class="cb-url-row">
-          <span class="cb-url-box" title="${url}" onclick="navigator.clipboard&&navigator.clipboard.writeText('${url}')">${url}</span>
-          <button class="cb-insert-btn" onclick="cbInsertOne('${url}','${isVideo?'vid':'img'}')">插入</button>
-        </div>`;
-      }
-      // Add to gallery
-      addToGallery(url, isVideo?'vid':'img');
-      cbDoneUrls.push({url, type:isVideo?'vid':'img'});
-      cbCheckAllDone();
-    } else {
-      if(bar){bar.style.width='100%';bar.style.background='#ef4444';}
-      if(st){st.textContent=`❌ 上傳失敗（${xhr.status}）`;st.style.color='#ef4444';}
+    const url=text;
+    if(bar){bar.style.width='100%';bar.style.background='#22c55e';}
+    if(st){st.textContent='✅ 上傳成功！';st.style.color='#22c55e';}
+    if(result){
+      result.innerHTML=`<div class="cb-url-row">
+        <span class="cb-url-box" title="${url}" onclick="navigator.clipboard&&navigator.clipboard.writeText('${url}').then(()=>showToast('✅ 已複製連結'))">${url}</span>
+        <button class="cb-insert-btn" onclick="cbInsertOne('${url}','${isVideo?'vid':'img'}')">插入</button>
+      </div>`;
     }
-  });
+    addToGallery(url,isVideo?'vid':'img');
+    cbDoneUrls.push({url,type:isVideo?'vid':'img'});
+    cbCheckAllDone();
 
-  xhr.addEventListener('error',()=>{
-    const st=document.getElementById(id+'_st');
-    if(st){st.textContent='❌ 網路錯誤，請確認連線';st.style.color='#ef4444';}
-  });
-
-  xhr.send(fd);
+  }catch(err){
+    console.error('Catbox upload error:',err);
+    if(bar){bar.style.width='100%';bar.style.background='#ef4444';}
+    if(st){st.textContent=`❌ 上傳失敗：${err.message}`;st.style.color='#ef4444';}
+  }
 }
 
 function cbCheckAllDone(){
