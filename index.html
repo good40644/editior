@@ -1438,7 +1438,7 @@ function prevImg(){const v=document.getElementById('f1').value.trim();const d=do
 /* ═══════════════════════════════════════════
    CATBOX AUTO-UPLOAD
 ═══════════════════════════════════════════ */
-const CATBOX_API='https://catbox.moe/user/api.php';
+const CATBOX_API='https://catbox-proxy.good406441.workers.dev/';
 let cbDoneUrls=[]; // finished uploads ready to insert
 
 function cbHandleDrop(e){
@@ -1499,13 +1499,9 @@ async function cbUploadOne(file){
     fd.append('fileToUpload',file);
 
     const res=await fetch(CATBOX_API,{method:'POST',body:fd});
-    const text=(await res.text()).trim();
-
-    if(!text.startsWith('https://')){
-      throw new Error(text||'伺服器回傳錯誤');
-    }
-
-    const url=text;
+    const json=await res.json();
+    if(!json.url) throw new Error(json.error||'上傳失敗');
+    const url=json.url;
     if(bar){bar.style.width='100%';bar.style.background='#22c55e';}
     if(st){st.textContent='✅ 上傳成功！';st.style.color='#22c55e';}
     if(result){
