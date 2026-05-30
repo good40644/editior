@@ -857,8 +857,8 @@ let lastWasCut=false;
 
 /* ═══════════════════════════════════════════
    SMART BBCode AUTO-CLOSE
-   輸入 [b] 自動補 [/b]，游標停在中間
-   用 input 事件，相容中文輸入法
+   輸入 [b] 的瞬間自動補 [/b]，游標停在中間
+   用 keyup 偵測 ] 鍵，相容各種輸入方式
 ═══════════════════════════════════════════ */
 const AUTO_CLOSE_TAGS=[
   'b','i','u','strike','xgold','xcenter','xgban','xnote','xwarn',
@@ -868,23 +868,43 @@ const AUTO_CLOSE_TAGS=[
   'xtiktok','hide','sell','fly','move','code','url',
   'size','color','backcolor','align','xleft','xright',
 ];
-editor.addEventListener('input',()=>{
-  if(isComposing) return;
+
+function tryAutoClose(){
   const pos=editor.selectionStart;
   const before=editor.value.slice(0,pos);
+  // 游標前最後一個字元必須是 ]
   if(!before.endsWith(']')) return;
+  // 抓開啟標籤，排除關閉標籤 [/xxx]
   const tagMatch=before.match(/\[([a-zA-Z][a-zA-Z0-9]*)(?:=[^\]]+)?]$/);
   if(!tagMatch) return;
   const tagName=tagMatch[1].toLowerCase();
   if(!AUTO_CLOSE_TAGS.includes(tagName)) return;
+  // 後面已有關閉標籤就不重複
   const after=editor.value.slice(pos);
   const closeTag=`[/${tagName}]`;
   if(after.startsWith(closeTag)) return;
+  // 插入關閉標籤，游標停在兩者之間
   pushUndo(editor.value);
   editor.value=before+closeTag+after;
   editor.selectionStart=editor.selectionEnd=pos;
   try{localStorage.setItem('liujin_editor_content',editor.value);}catch(ex){}
   updatePreview();updateStats();
+}
+
+// keyup 偵測 ] 鍵（直接鍵盤輸入）
+editor.addEventListener('keyup',e=>{
+  if(isComposing) return;
+  if(e.key===']') tryAutoClose();
+});
+
+// input 偵測貼上或虛擬鍵盤（inputType = insertText 且最後字元是 ]）
+editor.addEventListener('input',e=>{
+  if(isComposing) return;
+  // 只在新增文字時才檢查，避免刪除時誤觸
+  if(e.inputType&&!e.inputType.startsWith('insert')) return;
+  const pos=editor.selectionStart;
+  const before=editor.value.slice(0,pos);
+  if(before.endsWith(']')) tryAutoClose();
 });
 
 editor.addEventListener('cut',()=>{
