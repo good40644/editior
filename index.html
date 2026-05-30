@@ -138,7 +138,22 @@ body.light-theme .float-btn-gallery:hover,body.light-theme .float-btn-draft:hove
 .gallery-item .gal-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 5px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;text-align:center;pointer-events:none;}
 .gallery-empty{color:var(--text2);font-size:12px;text-align:center;padding:24px 10px;grid-column:1/-1;line-height:1.6;}
 
-/* ── GALLERY PANEL (side panel list style) ── */
+/* ── CATBOX UPLOAD ── */
+.cb-drag-over{border-color:var(--gold)!important;background:rgba(240,180,41,.06)!important;}
+.cb-item{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
+.cb-thumb{width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;}
+.cb-thumb img,.cb-thumb video{width:100%;height:100%;object-fit:cover;border-radius:6px;}
+.cb-info{flex:1;min-width:0;}
+.cb-name{font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cb-status{font-size:11px;margin-top:3px;}
+.cb-bar-wrap{height:4px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden;}
+.cb-bar{height:100%;background:var(--gold);border-radius:2px;width:0%;transition:width .2s;}
+.cb-url-row{display:flex;align-items:center;gap:6px;margin-top:5px;}
+.cb-url-box{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--gold);background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer;}
+.cb-insert-btn{flex-shrink:0;background:var(--gold);color:#000;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.cb-insert-btn:hover{background:var(--gold2);}
+
+/* ── CATBOX LEFT PANEL BUTTON label update ── */
 .gal-list{display:flex;flex-direction:column;gap:8px;}
 .gal-row{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
 .gal-row:hover{border-color:var(--gold);}
@@ -1111,7 +1126,7 @@ function buildLeftPanel(){
     {key:'image',title:lang==='zh'?'🖼 圖片':'🖼 Images',tags:[
       {tag:'ximg',icon:'🖼',label:lang==='zh'?'插入圖片連結':'Insert Image URL',code:'ximg',modal:true},
       {tag:'postimages',icon:'📤',label:lang==='zh'?'Postimages 上傳':'Postimages Upload',code:'半自動',modal:true,gold:true},
-      {tag:'catbox',icon:'🐱',label:lang==='zh'?'貓盒 Catbox':'Catbox',code:'半自動',modal:true,gold:true},
+      {tag:'catbox',icon:'🐱',label:lang==='zh'?'Catbox 自動上傳':'Catbox Upload',code:'自動',modal:true,gold:true},
       {tag:'gallery',icon:'🗂',label:lang==='zh'?'圖庫':'Gallery',code:'gallery',modal:true,gold:false},
     ]},
     {key:'dialog',title:lang==='zh'?'💬 對話':'💬 Dialog',tags:[
@@ -1236,20 +1251,63 @@ function openModal(tag){
       document.getElementById('modalOK').textContent='插入';
       break;
     case 'catbox':
-      html=`<div class="postimg-steps">
-        <div class="postimg-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">開啟 Catbox 上傳</div><div class="step-desc">點下方按鈕前往 Catbox 網站，上傳你的圖/影片。</div><button class="postimg-open-btn" onclick="window.open('https://catbox.moe/','_blank')">🐱 前往 Catbox 網站</button></div></div>
-        <div class="postimg-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">選擇類型並貼上連結</div>
-        <div style="display:flex;gap:8px;margin:8px 0;">
-          <button id="cbTypeImg" class="btn btn-gold" style="flex:1;font-size:12px;" onclick="setCatboxType('img')">🖼 圖片</button>
-          <button id="cbTypeVid" class="btn btn-ghost" style="flex:1;font-size:12px;" onclick="setCatboxType('vid')">🎥 影片</button>
+      html=`
+      <!-- Tab 切換 -->
+      <div style="display:flex;gap:0;margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid var(--border);">
+        <button id="cbTabAuto" onclick="cbSwitchTab('auto')"
+          style="flex:1;padding:7px 0;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;background:var(--gold);color:#000;transition:all .15s;">
+          🚀 自動上傳
+        </button>
+        <button id="cbTabManual" onclick="cbSwitchTab('manual')"
+          style="flex:1;padding:7px 0;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;background:var(--surface2);color:var(--text2);transition:all .15s;">
+          ✏️ 手動輸入
+        </button>
+      </div>
+
+      <!-- ── 自動上傳頁 ── -->
+      <div id="cbPaneAuto">
+        <div style="font-size:11px;color:var(--text2);background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.2);border-radius:7px;padding:8px 12px;margin-bottom:12px;line-height:1.6;">
+          🐱 直接拖放或選擇檔案，自動上傳到 Catbox 並取得連結。支援圖片（jpg/png/gif/webp）與影片（mp4/mov）。單檔最大 200MB，永久儲存。
         </div>
-        <label>貼上 Catbox 連結</label>
-        <input id="cbUrl" placeholder="https://files.catbox.moe/xxxxxx.jpg" oninput="prevCatbox()">
-        <div id="cbErr" style="font-size:11px;color:#ef4444;min-height:12px;margin-top:4px;"></div>
-        <div id="cbPrev" style="margin-top:6px;"></div>
-        </div></div></div>`;
-      document.getElementById('modalOK').textContent='插入';
-      setTimeout(()=>{ setCatboxType('img'); },30);
+        <div id="cbDropZone"
+          ondragover="event.preventDefault();this.classList.add('cb-drag-over')"
+          ondragleave="this.classList.remove('cb-drag-over')"
+          ondrop="cbHandleDrop(event)"
+          onclick="document.getElementById('cbFileInput').click()"
+          style="border:2px dashed var(--border);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;">
+          <div style="font-size:28px;margin-bottom:6px;">📂</div>
+          <div style="font-size:13px;color:var(--text);font-weight:600;">點擊選擇或拖放檔案到這裡</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px;">jpg · png · gif · webp · mp4 · mov　最大 200MB　可多選</div>
+        </div>
+        <input type="file" id="cbFileInput" accept="image/*,video/mp4,video/quicktime,.gif" multiple style="display:none" onchange="cbHandleFiles(this.files)">
+        <div id="cbQueue" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;"></div>
+        <div id="cbInsertAll" style="display:none;margin-top:10px;">
+          <button class="btn btn-gold" style="width:100%;font-size:12px;" onclick="cbInsertAllDone()">⬇️ 全部插入編輯器</button>
+        </div>
+      </div>
+
+      <!-- ── 手動輸入頁 ── -->
+      <div id="cbPaneManual" style="display:none;">
+        <div style="font-size:11px;color:var(--text2);background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:7px;padding:8px 12px;margin-bottom:12px;line-height:1.6;">
+          ✏️ 已有 Catbox 連結？直接貼上即可。也可前往 <button class="postimg-open-btn" style="display:inline;padding:1px 8px;font-size:11px;" onclick="window.open('https://catbox.moe/','_blank')">catbox.moe</button> 自行上傳後取得連結再貼入。
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button id="cbManTypeImg" class="btn btn-gold" style="flex:1;font-size:12px;" onclick="cbSetManType('img')">🖼 圖片</button>
+          <button id="cbManTypeVid" class="btn btn-ghost" style="flex:1;font-size:12px;" onclick="cbSetManType('vid')">🎥 影片</button>
+        </div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px;">貼上 Catbox 連結</label>
+        <input id="cbManUrl" placeholder="https://files.catbox.moe/xxxxxx.jpg" oninput="cbPrevManual()"
+          style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 11px;color:var(--text);font-family:inherit;font-size:12px;outline:none;">
+        <div id="cbManErr" style="font-size:11px;color:#ef4444;min-height:14px;margin-top:4px;"></div>
+        <div id="cbManPrev" style="margin-top:8px;"></div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-gold" style="width:100%;font-size:12px;" onclick="cbInsertManual()">⬇️ 插入編輯器</button>
+        </div>
+      </div>
+      `;
+      document.getElementById('modalOK').style.display='none';
+      document.getElementById('modalActions').style.display='none';
+      setTimeout(()=>{ cbManType='img'; },30);
       break;
     case 'gallery':
       html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;">
@@ -1377,17 +1435,185 @@ function prevYT(type){const v=document.getElementById('f1').value;const id=extra
 function prevTT(){const v=document.getElementById('f1').value;const id=extractTTId(v);const prev=document.getElementById('ttPrev');const err=document.getElementById('ttErr');if(!v.trim()){prev.textContent='';err.textContent='';return;}if(id){prev.textContent=`✅ ID：${id} → [xtiktok]${id}[/xtiktok]`;err.textContent='';}else{prev.textContent='';err.textContent='❌ 無法解析 TikTok ID，請確認網址';}}
 function prevImg(){const v=document.getElementById('f1').value.trim();const d=document.getElementById('imgPrev');if(!v){d.innerHTML='';return;}d.innerHTML=`<img src="${v}" style="max-width:100%;max-height:160px;border-radius:5px;" onerror="this.style.display='none'">`;}
 
-/* catbox */
-let catboxType='img';
-function setCatboxType(type){
-  catboxType=type;
-  const imgBtn=document.getElementById('cbTypeImg');const vidBtn=document.getElementById('cbTypeVid');
-  if(!imgBtn||!vidBtn)return;
-  if(type==='img'){imgBtn.className='btn btn-gold';imgBtn.style.flex='1';imgBtn.style.fontSize='12px';vidBtn.className='btn btn-ghost';vidBtn.style.flex='1';vidBtn.style.fontSize='12px';}
-  else{vidBtn.className='btn btn-gold';vidBtn.style.flex='1';vidBtn.style.fontSize='12px';imgBtn.className='btn btn-ghost';imgBtn.style.flex='1';imgBtn.style.fontSize='12px';}
-  prevCatbox();
+/* ═══════════════════════════════════════════
+   CATBOX AUTO-UPLOAD
+═══════════════════════════════════════════ */
+const CATBOX_API='https://catbox.moe/user/api.php';
+let cbDoneUrls=[]; // finished uploads ready to insert
+
+function cbHandleDrop(e){
+  e.preventDefault();
+  document.getElementById('cbDropZone').classList.remove('cb-drag-over');
+  cbHandleFiles(e.dataTransfer.files);
 }
-function prevCatbox(){const el=document.getElementById('cbUrl');const v=el?el.value.trim():'';const err=document.getElementById('cbErr');const prev=document.getElementById('cbPrev');if(!err||!prev)return;if(!v){err.textContent='';prev.innerHTML='';return;}if(!/^https?:\/\//i.test(v)){err.textContent='❌ 請貼上有效的網址';prev.innerHTML='';return;}err.textContent='';if(catboxType==='img'){prev.innerHTML=`<div style="font-size:11px;color:#22c55e;margin-bottom:6px;">✅ 圖片預覽</div><img src="${v}" style="max-width:100%;max-height:180px;border-radius:6px;display:block;" onerror="this.style.display='none'">`;}else{prev.innerHTML=`<div style="font-size:11px;color:#22c55e;margin-bottom:6px;">✅ 影片預覽</div><video src="${v}" controls style="max-width:100%;max-height:200px;border-radius:6px;display:block;" onerror="this.style.display='none'"></video>`;}}
+
+function cbHandleFiles(files){
+  if(!files||!files.length)return;
+  cbDoneUrls=[];
+  document.getElementById('cbInsertAll').style.display='none';
+  [...files].forEach(file=>cbUploadOne(file));
+}
+
+function cbUploadOne(file){
+  const isVideo=/\.(mp4|mov|webm)$/i.test(file.name);
+  const isImg=/\.(jpe?g|png|gif|webp|bmp)$/i.test(file.name);
+  if(!isVideo&&!isImg){showToast(`⚠️ 不支援的格式：${file.name}`);return;}
+  if(file.size>200*1024*1024){showToast(`⚠️ 檔案超過 200MB：${file.name}`);return;}
+
+  // Build queue item
+  const id='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const queue=document.getElementById('cbQueue');
+  const div=document.createElement('div');
+  div.className='cb-item';div.id=id;
+
+  // Thumbnail
+  let thumbHtml='';
+  if(isImg){
+    const objUrl=URL.createObjectURL(file);
+    thumbHtml=`<div class="cb-thumb"><img src="${objUrl}" onload="URL.revokeObjectURL(this.src)" onerror="this.parentElement.textContent='🖼'"></div>`;
+  } else {
+    thumbHtml=`<div class="cb-thumb">🎥</div>`;
+  }
+
+  div.innerHTML=`${thumbHtml}
+  <div class="cb-info">
+    <div class="cb-name">${escHtml(file.name)}</div>
+    <div class="cb-status" id="${id}_st" style="color:var(--text2);">⏳ 準備上傳…</div>
+    <div class="cb-bar-wrap"><div class="cb-bar" id="${id}_bar"></div></div>
+    <div id="${id}_result"></div>
+  </div>`;
+  queue.appendChild(div);
+  queue.scrollTop=queue.scrollHeight;
+
+  // Upload via XHR so we get progress
+  const fd=new FormData();
+  fd.append('reqtype','fileupload');
+  fd.append('fileToUpload',file);
+
+  const xhr=new XMLHttpRequest();
+  xhr.open('POST',CATBOX_API);
+
+  xhr.upload.addEventListener('progress',e=>{
+    if(e.lengthComputable){
+      const pct=Math.round(e.loaded/e.total*100);
+      const bar=document.getElementById(id+'_bar');
+      const st=document.getElementById(id+'_st');
+      if(bar)bar.style.width=pct+'%';
+      if(st)st.textContent=`⬆️ 上傳中… ${pct}%`;
+    }
+  });
+
+  xhr.addEventListener('load',()=>{
+    const st=document.getElementById(id+'_st');
+    const bar=document.getElementById(id+'_bar');
+    const result=document.getElementById(id+'_result');
+    if(xhr.status===200&&xhr.responseText.startsWith('https://')){
+      const url=xhr.responseText.trim();
+      if(bar){bar.style.width='100%';bar.style.background='#22c55e';}
+      if(st){st.textContent='✅ 上傳成功！';st.style.color='#22c55e';}
+      if(result){
+        result.innerHTML=`<div class="cb-url-row">
+          <span class="cb-url-box" title="${url}" onclick="navigator.clipboard&&navigator.clipboard.writeText('${url}')">${url}</span>
+          <button class="cb-insert-btn" onclick="cbInsertOne('${url}','${isVideo?'vid':'img'}')">插入</button>
+        </div>`;
+      }
+      // Add to gallery
+      addToGallery(url, isVideo?'vid':'img');
+      cbDoneUrls.push({url, type:isVideo?'vid':'img'});
+      cbCheckAllDone();
+    } else {
+      if(bar){bar.style.width='100%';bar.style.background='#ef4444';}
+      if(st){st.textContent=`❌ 上傳失敗（${xhr.status}）`;st.style.color='#ef4444';}
+    }
+  });
+
+  xhr.addEventListener('error',()=>{
+    const st=document.getElementById(id+'_st');
+    if(st){st.textContent='❌ 網路錯誤，請確認連線';st.style.color='#ef4444';}
+  });
+
+  xhr.send(fd);
+}
+
+function cbCheckAllDone(){
+  // Show "insert all" button once at least one upload is done
+  const insertAll=document.getElementById('cbInsertAll');
+  if(insertAll&&cbDoneUrls.length>0)insertAll.style.display='block';
+}
+
+function cbInsertOne(url,type){
+  const bb=type==='vid'?`[xmp4]${url}[/xmp4]\n`:`[ximg]${url}[/ximg]\n`;
+  insertAtCursor(bb);
+  showToast('✅ 已插入！');
+}
+
+function cbInsertAllDone(){
+  if(!cbDoneUrls.length){showToast('⚠️ 尚無完成的上傳');return;}
+  let code='';
+  cbDoneUrls.forEach(({url,type})=>{
+    code+=type==='vid'?`[xmp4]${url}[/xmp4]\n`:`[ximg]${url}[/ximg]\n`;
+  });
+  insertAtCursor(code);
+  showToast(`✅ 已插入 ${cbDoneUrls.length} 個檔案！`);
+  closeModal();
+}
+
+/* ── Catbox Tab 切換 ── */
+function cbSwitchTab(tab){
+  const isAuto=tab==='auto';
+  const tabAuto=document.getElementById('cbTabAuto');
+  const tabManual=document.getElementById('cbTabManual');
+  const paneAuto=document.getElementById('cbPaneAuto');
+  const paneManual=document.getElementById('cbPaneManual');
+  if(!tabAuto||!tabManual||!paneAuto||!paneManual)return;
+  tabAuto.style.background=isAuto?'var(--gold)':'var(--surface2)';
+  tabAuto.style.color=isAuto?'#000':'var(--text2)';
+  tabManual.style.background=isAuto?'var(--surface2)':'var(--gold)';
+  tabManual.style.color=isAuto?'var(--text2)':'#000';
+  paneAuto.style.display=isAuto?'':'none';
+  paneManual.style.display=isAuto?'none':'';
+}
+
+/* ── Catbox 手動輸入 ── */
+let cbManType='img';
+function cbSetManType(type){
+  cbManType=type;
+  const imgBtn=document.getElementById('cbManTypeImg');
+  const vidBtn=document.getElementById('cbManTypeVid');
+  if(!imgBtn||!vidBtn)return;
+  imgBtn.className=type==='img'?'btn btn-gold':'btn btn-ghost';
+  imgBtn.style.flex='1';imgBtn.style.fontSize='12px';
+  vidBtn.className=type==='vid'?'btn btn-gold':'btn btn-ghost';
+  vidBtn.style.flex='1';vidBtn.style.fontSize='12px';
+  cbPrevManual();
+}
+function cbPrevManual(){
+  const el=document.getElementById('cbManUrl');
+  const v=el?el.value.trim():'';
+  const err=document.getElementById('cbManErr');
+  const prev=document.getElementById('cbManPrev');
+  if(!err||!prev)return;
+  if(!v){err.textContent='';prev.innerHTML='';return;}
+  if(!/^https?:\/\//i.test(v)){err.textContent='❌ 請貼上有效的 https:// 網址';prev.innerHTML='';return;}
+  err.textContent='';
+  if(cbManType==='img'){
+    prev.innerHTML=`<div style="font-size:11px;color:#22c55e;margin-bottom:5px;">✅ 圖片預覽</div>
+      <img src="${v}" style="max-width:100%;max-height:160px;border-radius:6px;display:block;" onerror="this.parentElement.innerHTML='<div style=\\'font-size:11px;color:#ef4444;\\'>❌ 無法載入圖片，請確認連結</div>'">`;
+  } else {
+    prev.innerHTML=`<div style="font-size:11px;color:#22c55e;margin-bottom:5px;">✅ 影片預覽</div>
+      <video src="${v}" controls style="max-width:100%;max-height:180px;border-radius:6px;display:block;" onerror="this.parentElement.innerHTML='<div style=\\'font-size:11px;color:#ef4444;\\'>❌ 無法載入影片，請確認連結</div>'"></video>`;
+  }
+}
+function cbInsertManual(){
+  const el=document.getElementById('cbManUrl');
+  const v=el?el.value.trim():'';
+  if(!v){showToast('❌ 請貼上 Catbox 連結');return;}
+  if(!v.startsWith('http')){showToast('❌ 請貼上有效的網址');return;}
+  if(cbManType==='img'){addToGallery(v,'img');insertAtCursor(`[ximg]${v}[/ximg]\n`);}
+  else{addToGallery(v,'vid');insertAtCursor(`[xmp4]${v}[/xmp4]\n`);}
+  showToast('✅ 已插入！');
+  closeModal();
+}
 
 function prevPostimg(){const el=document.getElementById('piUrl');const v=el?el.value.trim():'';const err=document.getElementById('piErr');const imgp=document.getElementById('piImgPrev');if(!v){err.textContent='';imgp.innerHTML='';return;}const m=v.match(/\[url=([^\]]+)\]\[img\]([^\[]+)\[\/img\]\[\/url\]/);if(m){const imgSrc=m[2].trim();err.textContent='';imgp.innerHTML=`<div style="font-size:11px;color:#22c55e;margin-bottom:6px;">✅ 格式正確，可以插入</div><img src="${imgSrc}" style="max-width:100%;max-height:180px;border-radius:6px;display:block;" onerror="this.style.display='none'">`;}else{err.textContent='❌ 格式不符，請貼上 Postimages「論壇外連」的完整代碼，格式為 [url=...][img]...[/img][/url]';imgp.innerHTML='';}}
 
@@ -1415,7 +1641,7 @@ function confirmInsert(){
     case 'xmap': code=`[xmap]${g('f1')}[/xmap]\n`;break;
     case 'xmaplink': code=`[xmaplink]${g('f1')}[/xmaplink]\n`;break;
     case 'ximg':{const url=g('f1');if(url)addToGallery(url,'img');code=`[ximg]${url}[/ximg]\n`;break;}
-    case 'catbox':{const cbEl=document.getElementById('cbUrl');const cbRaw=cbEl?cbEl.value.trim():'';if(!cbRaw){showToast('❌ 請貼上 Catbox 連結');return;}if(!cbRaw.startsWith('http')){showToast('❌ 請貼上有效的網址');return;}if(catboxType==='img'){addToGallery(cbRaw,'img');code=`[ximg]${cbRaw}[/ximg]\n`;}else{addToGallery(cbRaw,'vid');code=`[xmp4]${cbRaw}[/xmp4]\n`;}break;}
+    case 'catbox':{/* handled by auto-upload buttons, no-op here */break;}
     case 'postimages':{const el=document.getElementById('piUrl');const raw=el?el.value.trim():'';if(!raw){showToast('❌ 請貼上論壇外連代碼');return;}const m=raw.match(/\[url=([^\]]+)\]\[img\]([^\[]+)\[\/img\]\[\/url\]/);if(!m){showToast('❌ 格式不符，請貼上論壇外連代碼');return;}addToGallery(m[2].trim(),'img');code=raw+'\n';break;}
     case 'dialog':{const rows=[...document.querySelectorAll('#dialogRows .dialog-row')];code=rows.map(r=>{const side=r.dataset.side;const txt=r.querySelector('input').value.trim();return txt?`[x${side}]${txt}[/x${side}]`:''}).filter(Boolean).join('')+'\n';break;}
     case 'xtable':{
