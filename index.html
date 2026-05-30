@@ -574,6 +574,8 @@ function handleKeyDown(e){
 function smartAutoClose(e){ /* 已移至 input 事件，此函數保留為空 */ }
 let isComposing=false;
 /* ─── 預覽 debounce timer ─── */
+let undoTimer;
+let saveEditorTimer;
 let previewTimer;
 function schedulePreview(){
   clearTimeout(previewTimer);
@@ -857,6 +859,16 @@ function closePanel4(){
    SELECTION  (fixed: no ghost selection from cut)
 ═══════════════════════════════════════════ */
 const editor=document.getElementById('editor');
+
+// auto-close 偵測（獨立監聽，不干擾 oninput）
+editor.addEventListener('input',e=>{
+  if(isComposing) return;
+  if(!e.inputType||e.inputType.startsWith('insert')){
+    const pos=editor.selectionStart;
+    const before=editor.value.slice(0,pos);
+    if(before.endsWith(']')) tryAutoClose();
+  }
+});
 let savedSel={start:0,end:0,text:''};
 // Track if the last change was a cut operation
 let lastWasCut=false;
@@ -931,16 +943,6 @@ editor.addEventListener('keyup',e=>{
       }
     }
   }
-});
-
-// input 偵測貼上或虛擬鍵盤（inputType = insertText 且最後字元是 ]）
-editor.addEventListener('input',e=>{
-  if(isComposing) return;
-  // 只在新增文字時才檢查，避免刪除時誤觸
-  if(e.inputType&&!e.inputType.startsWith('insert')) return;
-  const pos=editor.selectionStart;
-  const before=editor.value.slice(0,pos);
-  if(before.endsWith(']')) tryAutoClose();
 });
 
 editor.addEventListener('cut',()=>{
@@ -1915,6 +1917,12 @@ function updatePreview(){
   // Restore code blocks
   codePlaceholders.forEach((html,i)=>{h=h.replace(`«code${i}»`,html);});
   document.getElementById('preview').innerHTML=h||'<p style="color:#aaa;font-size:13px;text-align:center;margin-top:50px;">← 從左側選擇標籤開始</p>';
+  // 若合併模式的 overlay 正在顯示，同步更新它
+  const overlay=document.getElementById('previewOverlay');
+  const overlayBody=document.getElementById('previewOverlayBody');
+  if(overlay&&overlayBody&&overlay.style.display!=='none'){
+    overlayBody.innerHTML=document.getElementById('preview').innerHTML;
+  }
 }
 
 /* ═══════════════════════════════════════════
