@@ -446,7 +446,7 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
     placeholder="點功能按鈕插入 BBCode，或直接輸入..."
     oninput="onEditorInput()"
     oncompositionstart="isComposing=true"
-    oncompositionend="isComposing=false;onEditorInput()"
+    oncompositionend="isComposing=false;onEditorInput();schedulePreview()"
     onmouseup="checkSel()"
     onkeyup="checkSel()"
     onkeydown="handleKeyDown(event)"
@@ -573,6 +573,13 @@ function handleKeyDown(e){
 ═══════════════════════════════════════════ */
 function smartAutoClose(e){ /* 已移至 input 事件，此函數保留為空 */ }
 let isComposing=false;
+/* ─── 預覽 debounce timer ─── */
+let previewTimer;
+function schedulePreview(){
+  clearTimeout(previewTimer);
+  previewTimer=setTimeout(()=>{ updatePreview(); updateStats(); },150);
+}
+
 function onEditorInput(){
   if(isComposing)return;
   clearTimeout(undoTimer);
@@ -603,8 +610,7 @@ function onEditorInput(){
   });
   const ttRe=/\[xtiktok\]([^\[]+)\[\/xtiktok\]/g;
   while((m=ttRe.exec(val))!==null){addToGallery(m[1].trim(),'tt');}
-  updatePreview();
-  updateStats();
+  schedulePreview();
 }
 
 /* ═══════════════════════════════════════════
@@ -888,7 +894,7 @@ function tryAutoClose(){
   editor.value=before+closeTag+after;
   editor.selectionStart=editor.selectionEnd=pos;
   try{localStorage.setItem('liujin_editor_content',editor.value);}catch(ex){}
-  updatePreview();updateStats();
+  schedulePreview();
 }
 
 // keyup 偵測兩種情況：
@@ -919,7 +925,7 @@ editor.addEventListener('keyup',e=>{
             editor.value=editor.value.slice(0,insertPos)+closeTag+editor.value.slice(insertPos);
             editor.selectionStart=editor.selectionEnd=pos; // 游標留在 ] 前（標籤內容區）
             try{localStorage.setItem('liujin_editor_content',editor.value);}catch(ex){}
-            updatePreview();updateStats();
+            schedulePreview();
           }
         }
       }
