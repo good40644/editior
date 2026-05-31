@@ -284,6 +284,7 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
 #preview .xtable tr:nth-child(even) td{background:#fafafa;}
 #preview .media-ph{background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin:6px 0;font-size:12px;color:#888;text-align:center;}
 #preview img.forum-img{max-width:100%;border-radius:4px;margin:4px 0;display:block;}
+#preview img.forum-img-ximg{display:block;width:auto;max-width:100%;border-radius:4px;margin:0 auto;}
 #preview video.forum-img{max-width:100%;border-radius:6px;margin:4px 0;display:block;}
 #previewOverlayBody img.forum-img{max-width:100%;border-radius:4px;margin:4px 0;display:block;}
 #previewOverlayBody video.forum-img{max-width:100%;border-radius:6px;margin:4px 0;display:block;}
@@ -1898,7 +1899,7 @@ function updatePreview(){
   h=h.replace(/\[hr\]/g,'<hr style="border:none;border-top:1px solid #ccc;margin:10px 0;opacity:.7;">');
   // url+img (Postimages)
   h=h.replace(/\[url=([^\]]+)\]\[img\]([\s\S]*?)\[\/img\]\[\/url\]/g,(_,href,src)=>`<a href="${href}" target="_blank"><img class="forum-img" src="${src.trim()}" onerror="this.style.display='none'"></a>`);
-  h=h.replace(/\[url=([^\]]+)\]\[ximg\]([\s\S]*?)\[\/ximg\]\[\/url\]/g,(_,href,src)=>`<a href="${href}" target="_blank"><img class="forum-img" src="${src.trim()}" onerror="this.style.display='none'"></a>`);
+  h=h.replace(/\[url=([^\]]+)\]\[ximg\]([\s\S]*?)\[\/ximg\]\[\/url\]/g,(_,href,src)=>`<div style="text-align:center;margin:6px 0;"><a href="${href}" target="_blank"><img class="forum-img forum-img-ximg" src="${src.trim()}" onerror="this.style.display='none'"></a></div>`);
   h=h.replace(/\[url\]([\s\S]*?)\[\/url\]/g,'<a href="$1" style="color:#3b82f6" target="_blank">$1</a>');
   h=h.replace(/\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/g,'<a href="$1" style="color:#3b82f6" target="_blank">$2</a>');
   // xhr
@@ -1920,7 +1921,7 @@ function updatePreview(){
     ['xtag',c=>`<span class="xtag-pill">${c}</span>`],
     ['xrate',c=>`<span class="xrate-badge">★ ${c} / 10</span>`],
     ['xsmall',c=>`<span class="xsmall-text">${c}</span>`],
-    ['ximg',c=>`<img class="forum-img" src="${c}" onerror="this.style.display='none'">`],
+    ['ximg',c=>`<div style="text-align:center;margin:6px 0;"><img class="forum-img forum-img-ximg" src="${c}" onerror="this.style.display='none'"></div>`],
     ['img',c=>`<img class="forum-img" src="${c}" onerror="this.style.display='none'">`],
     ['xmp4',c=>`<video class="forum-img" controls style="max-width:100%;border-radius:6px;margin:4px 0;"><source src="${c}" type="video/mp4">MP4: ${c}</video>`],
     ['xvmp4',c=>`<video class="forum-img" controls style="max-width:320px;border-radius:6px;margin:4px 0;"><source src="${c}" type="video/mp4">MP4: ${c}</video>`],
