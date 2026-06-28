@@ -2164,11 +2164,17 @@ function svHandleFile(file){
         document.getElementById('svResult').style.display='';
       } else {
         statusEl.style.display='none';
-        document.getElementById('svAutoErr').textContent='❌ ' + (res.error||'上傳失敗');
+        // Show full debug info
+        const errEl = document.getElementById('svAutoErr');
+        const debugInfo = 'keys:' + JSON.stringify(res.keys||[]) +
+          ' | full:' + JSON.stringify(res.full_response||res).slice(0,300);
+        errEl.innerHTML = '❌ ' + (res.error||'上傳失敗') +
+          '<br><textarea style="width:100%;height:80px;font-size:9px;margin-top:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px;">' +
+          debugInfo.replace(/</g,'&lt;') + '</textarea>';
       }
     } catch(err){
       statusEl.style.display='none';
-      document.getElementById('svAutoErr').textContent='❌ 回應解析失敗';
+      document.getElementById('svAutoErr').innerHTML='❌ 回應解析失敗<br><textarea style="width:100%;height:60px;font-size:9px;margin-top:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px;">' + xhr.responseText.slice(0,300) + '</textarea>';
     }
   };
 
