@@ -1461,16 +1461,16 @@ function openModal(tag){
           🎬 直接拖放或選擇影片，自動上傳到 Sendvid 並插入 BBCode。支援 mp4/mov/avi/mkv。
         </div>
         <div id="svDropZone"
-          ondragover="event.preventDefault();this.classList.add('cb-drag-over')"
-          ondragleave="this.classList.remove('cb-drag-over')"
-          ondrop="svHandleDrop(event)"
-          onclick="document.getElementById('svFileInput').click()"
+          
+          
+          
+          
           style="border:2px dashed var(--border);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:.2s;background:var(--bg);">
           <div style="font-size:28px;margin-bottom:6px;">🎬</div>
           <div style="font-size:13px;color:var(--text);font-weight:600;">點擊選擇或拖放影片到這裡</div>
           <div style="font-size:11px;color:var(--text2);margin-top:4px;">mp4 · mov · avi · mkv</div>
         </div>
-        <input type="file" id="svFileInput" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm" style="display:none" onchange="svHandleFile(this.files[0])">
+        <input type="file" id="svFileInput" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm" style="display:none" >
         <div id="svUploadStatus" style="margin-top:10px;display:none;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
             <span id="svStatusText" style="font-size:12px;color:var(--gold);">準備上傳...</span>
@@ -1543,8 +1543,8 @@ function openModal(tag){
           🐱 直接拖放或選擇檔案，自動上傳到 Catbox 並取得連結。支援圖片（jpg/png/gif/webp）與影片（mp4/mov）。單檔最大 200MB，永久儲存。
         </div>
         <div id="cbDropZone"
-          ondragover="event.preventDefault();this.classList.add('cb-drag-over')"
-          ondragleave="this.classList.remove('cb-drag-over')"
+          
+          
           ondrop="cbHandleDrop(event)"
           onclick="document.getElementById('cbFileInput').click()"
           style="border:2px dashed var(--border);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;">
@@ -1649,6 +1649,34 @@ function openModal(tag){
   setTimeout(()=>{
     if(tag==='gallery')renderGallery(document.getElementById('galGrid'));
     if(tag==='xtable'){initTable(2);}
+    // Sendvid: attach file input listener after DOM is ready
+    if(tag==='xsendvid'){
+      const svInput=document.getElementById('svFileInput');
+      if(svInput){
+        svInput.addEventListener('change',function(){
+          if(this.files&&this.files[0]) svHandleFile(this.files[0]);
+        });
+      }
+      const svDrop=document.getElementById('svDropZone');
+      if(svDrop){
+        svDrop.addEventListener('click',function(){
+          const inp=document.getElementById('svFileInput');
+          if(inp) inp.click();
+        });
+        svDrop.addEventListener('dragover',function(e){
+          e.preventDefault();this.classList.add('cb-drag-over');
+        });
+        svDrop.addEventListener('dragleave',function(){
+          this.classList.remove('cb-drag-over');
+        });
+        svDrop.addEventListener('drop',function(e){
+          e.preventDefault();this.classList.remove('cb-drag-over');
+          const file=[...e.dataTransfer.files].find(f=>f.type.startsWith('video/'));
+          if(!file){document.getElementById('svAutoErr').textContent='❌ 請拖入影片檔案';return;}
+          svHandleFile(file);
+        });
+      }
+    }
     if(tag==='colorpicker'){document.getElementById('colorCustom').addEventListener('input',e=>{selectColor(e.target.value);});}
     const f=document.getElementById('f1')||document.getElementById('piUrl')||document.getElementById('tblHead');
     if(f)f.focus();
