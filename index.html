@@ -2122,6 +2122,23 @@ function svHandleDrop(e){
   svHandleFile(file);
 }
 
+async function svGetSendvidContext(){
+  // 從 Sendvid 首頁取得 cookie 和 CSRF token
+  try {
+    const resp = await fetch('https://sendvid.com/', {
+      credentials: 'include',
+      mode: 'cors',
+    });
+    const html = await resp.text();
+    const csrfMatch = html.match(/<meta\s+content="([^"]+)"\s+name="csrf-token"/i) ||
+                      html.match(/<meta\s+name="csrf-token"\s+content="([^"]+)"/i);
+    const csrf = csrfMatch ? csrfMatch[1] : '';
+    return { csrf };
+  } catch(e) {
+    return { csrf: '' };
+  }
+}
+
 function svHandleFile(file){
   if(!file) return;
   const workerUrl = 'https://sendvid-proxy.good406441.workers.dev/';
@@ -2131,22 +2148,74 @@ function svHandleFile(file){
   const statusText= document.getElementById('svStatusText');
   const progressBar=document.getElementById('svProgressBar');
   statusEl.style.display='';
-  statusText.textContent='⬆ 上傳中...';
-  progressBar.style.width='10%';
+  statusText.textContent='🔑 取得授權中...';
+  progressBar.style.width='5%';
 
-  const fd = new FormData();
-  fd.append('file', file, file.name);
+  // 先取得 Sendvid 的 CSRF token 和 session cookie
+  svGetSendvidContext().then(({csrf})=>{
+    statusText.textContent='⬆ 上傳中...';
+    progressBar.style.width='10%';
 
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', workerUrl);
+    // 產生 session ID（UUID v4）
+    const hex = (n) => [...Array(n)].map(()=>Math.floor(Math.random()*16).toString(16)).join('');
+    const sessionId = `${hex(8)}-${hex(4)}-4${hex(3)}-${(8+Math.floor(Math.random()*4)).toString(16)}${hex(3)}-${hex(12)}`;
+
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', workerUrl);
+    // 傳送瀏覽器的 CSRF 和 session 給 Worker
+    if(csrf) xhr.setRequestHeader('X-Browser-Csrf', csrf);
+    xhr.setRequestHeader('X-Browser-Session', sessionId);
+    // Cookie 由瀏覽器自動帶（credentials:include），但 CORS 無法直接讀取
+    // 改由 Worker 使用瀏覽器傳來的 CSRF 就好
 
   xhr.upload.onprogress = (e)=>{
     if(e.lengthComputable){
-      const pct = Math.round(e.loaded/e.total*90);
+      const pct = Math.round(e.loaded/e.total*85)+10;
       progressBar.style.width = pct + '%';
-      statusText.textContent = '⬆ 上傳中 ' + pct + '%';
+      statusText.textContent = '⬆ 上傳中 ' + Math.round((pct-10)/85*100) + '%';
     }
   };
+
+  xhr.onload = ()=>{
+    progressBar.style.width='100%';
+    try {
+      const res = JSON.parse(xhr.responseText);
+      if(res.success && res.url){
+        svUploadedUrl = res.url;
+        svUploadedId  = res.id || (res.url.match(/sendvid\.com\/([a-zA-Z0-9]+)/)||[])[1];
+        statusText.textContent='✅ 上傳完成！';
+        const embedEl = document.getElementById('svEmbed2');
+        if(svUploadedId){
+          embedEl.innerHTML='<iframe src="https://sendvid.com/embed/'+svUploadedId+'"'+
+            ' style="width:100%;height:160px;border-radius:6px;border:none;" allowfullscreen></iframe>';
+        }
+        document.getElementById('svResult').style.display='';
+      } else {
+        statusEl.style.display='none';
+        const errEl = document.getElementById('svAutoErr');
+        const debugInfo = 'keys:'+JSON.stringify(res.keys||[]) +
+          ' | full:'+JSON.stringify(res.full_response||res).slice(0,300);
+        errEl.innerHTML = '❌ ' + (res.error||'上傳失敗') +
+          '<br><textarea style="width:100%;height:80px;font-size:9px;margin-top:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px;">' +
+          debugInfo + '</textarea>';
+      }
+    } catch(err){
+      statusEl.style.display='none';
+      document.getElementById('svAutoErr').textContent='❌ 回應解析失敗: ' + xhr.responseText.slice(0,100);
+    }
+  };
+
+  xhr.onerror = ()=>{
+    statusEl.style.display='none';
+    document.getElementById('svAutoErr').textContent='❌ 網路錯誤，請確認 Worker 是否正常運作';
+  };
+
+  xhr.send(fd);
+  }); // end svGetSendvidContext().then
+}
 
   xhr.onload = ()=>{
     progressBar.style.width='100%';
