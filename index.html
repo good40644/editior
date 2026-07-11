@@ -1649,34 +1649,7 @@ function openModal(tag){
   setTimeout(()=>{
     if(tag==='gallery')renderGallery(document.getElementById('galGrid'));
     if(tag==='xtable'){initTable(2);}
-    // Sendvid: attach file input listener after DOM is ready
-    if(tag==='xsendvid'){
-      const svInput=document.getElementById('svFileInput');
-      if(svInput){
-        svInput.addEventListener('change',function(){
-          if(this.files&&this.files[0]) svHandleFile(this.files[0]);
-        });
-      }
-      const svDrop=document.getElementById('svDropZone');
-      if(svDrop){
-        svDrop.addEventListener('click',function(){
-          const inp=document.getElementById('svFileInput');
-          if(inp) inp.click();
-        });
-        svDrop.addEventListener('dragover',function(e){
-          e.preventDefault();this.classList.add('cb-drag-over');
-        });
-        svDrop.addEventListener('dragleave',function(){
-          this.classList.remove('cb-drag-over');
-        });
-        svDrop.addEventListener('drop',function(e){
-          e.preventDefault();this.classList.remove('cb-drag-over');
-          const file=[...e.dataTransfer.files].find(f=>f.type.startsWith('video/'));
-          if(!file){document.getElementById('svAutoErr').textContent='❌ 請拖入影片檔案';return;}
-          svHandleFile(file);
-        });
-      }
-    }
+
     if(tag==='colorpicker'){document.getElementById('colorCustom').addEventListener('input',e=>{selectColor(e.target.value);});}
     const f=document.getElementById('f1')||document.getElementById('piUrl')||document.getElementById('tblHead');
     if(f)f.focus();
@@ -2073,6 +2046,41 @@ function updatePreview(){
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
+// Event delegation for Sendvid modal (works regardless of innerHTML timing)
+document.addEventListener('click', function(e){
+  // svDropZone click → trigger file input
+  if(e.target.closest('#svDropZone')){
+    const inp=document.getElementById('svFileInput');
+    if(inp){ inp.value=''; inp.click(); }
+  }
+});
+document.addEventListener('change', function(e){
+  // svFileInput change → upload
+  if(e.target && e.target.id==='svFileInput'){
+    if(e.target.files&&e.target.files[0]) svHandleFile(e.target.files[0]);
+  }
+});
+document.addEventListener('dragover', function(e){
+  if(e.target.closest && e.target.closest('#svDropZone')){
+    e.preventDefault();
+    e.target.closest('#svDropZone').classList.add('cb-drag-over');
+  }
+});
+document.addEventListener('dragleave', function(e){
+  if(e.target.closest && e.target.closest('#svDropZone')){
+    e.target.closest('#svDropZone').classList.remove('cb-drag-over');
+  }
+});
+document.addEventListener('drop', function(e){
+  const dz = e.target.closest && e.target.closest('#svDropZone');
+  if(dz){
+    e.preventDefault();
+    dz.classList.remove('cb-drag-over');
+    const file=[...e.dataTransfer.files].find(f=>f.type.startsWith('video/'));
+    if(!file){ const err=document.getElementById('svAutoErr'); if(err)err.textContent='❌ 請拖入影片檔案'; return; }
+    svHandleFile(file);
+  }
+});
 buildLeftPanel();
 // Restore editor content
 try{
