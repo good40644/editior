@@ -2169,7 +2169,7 @@ function svHandleFile(file){
         statusEl.style.display='none';
         // Show full debug info
         const errEl = document.getElementById('svAutoErr');
-        alert('=== Sendvid Debug ===\n' + JSON.stringify(res.debug||res, null, 2));
+        alert('=== Sendvid Debug ===\n' + JSON.stringify(res, null, 2));
         errEl.textContent = '❌ ' + (res.error||'上傳失敗') + '（詳見彈出視窗）';
       }
     } catch(err){
