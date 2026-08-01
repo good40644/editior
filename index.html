@@ -1937,22 +1937,28 @@ function updatePreview(){
   h=h.replace(/\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/g,'<a href="$1" style="color:#3b82f6" target="_blank">$2</a>');
   // xhr
   h=h.replace(/\[xhr\]x\[\/xhr\]/g,'<hr class="xhr-line">');
+  // 禁止符號檢查（模擬論壇失效行為）
+  const FORBIDDEN=/[&=`'"()+\-\/<>\[\]]/;
+  const hasForbidden=str=>FORBIDDEN.test(str);
+  // 失效時原樣輸出（還原 HTML entity 回原始字元供顯示）
+  const failRaw=(tag,raw)=>`[${tag}]${raw}[/${tag}]`;
+  const failRawAttr=(tag,attr,raw)=>`[${tag}=${attr}]${raw}[/${tag}]`;
   // block map
   const bm=[
-    ['xgold',c=>`<div class="xgold-box">${c}</div>`],
-    ['xcenter',c=>`<div class="xcenter-box">${c}</div>`],
-    ['xgban',c=>`<div class="xgban-box">${c}</div>`],
-    ['xnote',c=>`<div class="xnote-box">${c}</div>`],
-    ['xwarn',c=>`<div class="xwarn-box">${c}</div>`],
-    ['xblue',c=>`<div class="xblue-box">${c}</div>`],
-    ['xgreen',c=>`<div class="xgreen-box">${c}</div>`],
-    ['xred',c=>`<div class="xred-box">${c}</div>`],
-    ['xinfo',c=>`<div class="xinfo-box">${c}</div>`],
-    ['xglass',c=>`<div class="xglass-box">${c}</div>`],
-    ['xquote',c=>`<div class="xquote-box">${c}</div>`],
+    ['xgold',c=>hasForbidden(c)?failRaw('xgold',c):`<div class="xgold-box">${c}</div>`],
+    ['xcenter',c=>hasForbidden(c)?failRaw('xcenter',c):`<div class="xcenter-box">${c}</div>`],
+    ['xgban',c=>hasForbidden(c)?failRaw('xgban',c):`<div class="xgban-box">${c}</div>`],
+    ['xnote',c=>(hasForbidden(c)||c.includes('\n'))?failRaw('xnote',c):`<div class="xnote-box">${c}</div>`],
+    ['xwarn',c=>hasForbidden(c)?failRaw('xwarn',c):`<div class="xwarn-box">${c}</div>`],
+    ['xblue',c=>hasForbidden(c)?failRaw('xblue',c):`<div class="xblue-box">${c}</div>`],
+    ['xgreen',c=>hasForbidden(c)?failRaw('xgreen',c):`<div class="xgreen-box">${c}</div>`],
+    ['xred',c=>hasForbidden(c)?failRaw('xred',c):`<div class="xred-box">${c}</div>`],
+    ['xinfo',c=>hasForbidden(c)?failRaw('xinfo',c):`<div class="xinfo-box">${c}</div>`],
+    ['xglass',c=>hasForbidden(c)?failRaw('xglass',c):`<div class="xglass-box">${c}</div>`],
+    ['xquote',c=>hasForbidden(c)?failRaw('xquote',c):`<div class="xquote-box">${c}</div>`],
     ['quote',c=>`<div class="quote-box">${c}</div>`],
-    ['xtag',c=>`<span class="xtag-pill">${c}</span>`],
-    ['xrate',c=>`<span class="xrate-badge">★ ${c} / 10</span>`],
+    ['xtag',c=>hasForbidden(c)?failRaw('xtag',c):`<span class="xtag-pill">${c}</span>`],
+    ['xrate',c=>hasForbidden(c)?failRaw('xrate',c):`<span class="xrate-badge">★ ${c} / 10</span>`],
     ['xsmall',c=>`<span class="xsmall-text">${c}</span>`],
     ['ximg',c=>`<img class="forum-img ximg-img" src="${c}" onerror="this.style.display='none'">`],
     ['img',c=>`<img class="forum-img" src="${c}" onerror="this.style.display='none'">`],
@@ -1976,9 +1982,15 @@ function updatePreview(){
   // xspoiler
   h=h.replace(/\[xspoiler=([^\]]+)\]([\s\S]*?)\[\/xspoiler\]/g,(_,btn,body)=>{const id='sp'+Math.random().toString(36).slice(2,7);return `<div class="xspoiler-wrap"><div id="${id}_btn" onclick="(function(){var b=document.getElementById('${id}_body'),a=document.getElementById('${id}_btn');var open=b.style.display!=='none';b.style.display=open?'none':'block';a.innerHTML=(open?'▶ ':'▼ ')+'${btn.replace(/'/g,"\\'")}';})();" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#f0f0f0;border:1px solid #ddd;border-radius:5px;font-size:13px;user-select:none;">▶ ${btn}</div><div id="${id}_body" style="display:none;padding:10px 14px;background:#fafafa;border:1px solid #ddd;border-top:none;border-radius:0 0 5px 5px;font-size:13px;color:#333;">${body.trim()}</div></div>`;});
   // xcard
-  h=h.replace(/\[xcard=([^\]]+)\]([\s\S]*?)\[\/xcard\]/g,(_,t_,b)=>`<div class="xcard-box"><div class="xcard-title">${t_}</div><div class="xcard-body">${b.trim()}</div></div>`);
+  h=h.replace(/\[xcard=([^\]]+)\]([\s\S]*?)\[\/xcard\]/g,(_,t_,b)=>{
+    if(hasForbidden(t_)||hasForbidden(b.trim()))return failRawAttr('xcard',t_,b.trim());
+    return `<div class="xcard-box"><div class="xcard-title">${t_}</div><div class="xcard-body">${b.trim()}</div></div>`;
+  });
   // xbtn
-  h=h.replace(/\[xbtn=([^\]]+)\]([\s\S]*?)\[\/xbtn\]/g,(_,url,text)=>`<a class="xbtn-link" href="${url}" target="_blank">${text.trim()}</a>`);
+  h=h.replace(/\[xbtn=([^\]]+)\]([\s\S]*?)\[\/xbtn\]/g,(_,url,text)=>{
+    if(/&/.test(url))return failRawAttr('xbtn',url,text.trim());
+    return `<a class="xbtn-link" href="${url}" target="_blank">${text.trim()}</a>`;
+  });
   // dialog
   h=h.replace(/\[xleft\]([\s\S]*?)\[\/xleft\]/g,(_,c)=>`<div class="xleft-bubble"><span>${c.trim()}</span></div>`);
   h=h.replace(/\[xright\]([\s\S]*?)\[\/xright\]/g,(_,c)=>`<div class="xright-bubble"><span>${c.trim()}</span></div>`);
