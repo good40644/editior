@@ -508,7 +508,7 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
   ></textarea>
   <div class="editor-footer">
     <div class="footer-stats">
-      <span id="charCount">文字：0字</span>
+      <span id="charCount">中文字數：0字</span>
       <span id="imgCount">圖片：0</span>
       <span id="vidCount">影片：0</span>
     </div>
@@ -1445,63 +1445,12 @@ function openModal(tag){
     case 'xsound':
       html=`<label>SoundCloud 連結</label><input id="f1" placeholder="https://soundcloud.com/...">`;break;
     case 'xsendvid':
-      html=`
-      <div style="display:flex;gap:0;margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid var(--border);">
-        <button id="svTabAuto" onclick="svSwitchTab('auto')"
-          style="flex:1;padding:7px 0;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;background:var(--gold);color:#000;">
-          🚀 自動上傳
-        </button>
-        <button id="svTabManual" onclick="svSwitchTab('manual')"
-          style="flex:1;padding:7px 0;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;background:var(--surface2);color:var(--text2);">
-          ✏️ 手動輸入
-        </button>
-      </div>
-      <div id="svPaneAuto">
-        <div style="font-size:11px;color:var(--text2);background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.2);border-radius:7px;padding:8px 11px;margin-bottom:12px;line-height:1.6;">
-          🎬 直接拖放或選擇影片，自動上傳到 Sendvid 並插入 BBCode。支援 mp4/mov/avi/mkv。
-        </div>
-        <div id="svDropZone"
-          
-          
-          
-          
-          style="border:2px dashed var(--border);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:.2s;background:var(--bg);">
-          <div style="font-size:28px;margin-bottom:6px;">🎬</div>
-          <div style="font-size:13px;color:var(--text);font-weight:600;">點擊選擇或拖放影片到這裡</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:4px;">mp4 · mov · avi · mkv</div>
-        </div>
-        <input type="file" id="svFileInput" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm" style="display:none" >
-        <div id="svUploadStatus" style="margin-top:10px;display:none;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <span id="svStatusText" style="font-size:12px;color:var(--gold);">準備上傳...</span>
-          </div>
-          <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;">
-            <div id="svProgressBar" style="background:var(--gold);height:100%;width:0%;transition:width .3s;"></div>
-          </div>
-        </div>
-        <div id="svResult" style="margin-top:10px;display:none;">
-          <div style="font-size:11px;color:#22c55e;margin-bottom:6px;">✅ 上傳成功！</div>
-          <div id="svEmbed2" style="margin-top:8px;"></div>
-          <button class="btn btn-gold" style="width:100%;margin-top:10px;font-size:12px;" onclick="svInsertResult()">⬇️ 插入編輯器</button>
-        </div>
-        <div id="svAutoErr" style="font-size:11px;color:#ef4444;min-height:14px;margin-top:6px;"></div>
-
-      </div>
-      <div id="svPaneManual" style="display:none;">
-        <div style="font-size:11px;color:var(--text2);background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:7px;padding:8px 11px;margin-bottom:12px;">
-          ✏️ 已有 Sendvid 連結？直接貼上。或前往
-          <button class="postimg-open-btn" style="display:inline;padding:1px 8px;font-size:10px;" onclick="window.open('https://sendvid.com/','_blank')">🔗 Sendvid</button>
-          上傳後取得連結。
-        </div>
-        <label>貼上 Sendvid 網址或影片 ID</label>
-        <input id="f1" placeholder="https://sendvid.com/8ayyh3m4 或 8ayyh3m4" oninput="prevSendvid()">
-        <div id="svPrev" style="margin-top:6px;font-size:11px;min-height:14px;font-family:'JetBrains Mono',monospace;color:var(--gold);"></div>
-        <div id="svErr" style="font-size:11px;color:#ef4444;min-height:14px;"></div>
-        <div id="svEmbed" style="margin-top:8px;"></div>
-      </div>
-      `;
-
-      break;
+      html=`<div style="margin-bottom:8px;"><button class="postimg-open-btn" onclick="window.open('https://sendvid.com/','_blank')">🔗 前往 Sendvid 上傳</button></div>
+      <label>貼上 Sendvid 網址或影片 ID</label>
+      <input id="f1" placeholder="https://sendvid.com/8ayyh3m4 或 8ayyh3m4" oninput="prevSendvid()">
+      <div id="svPrev" style="margin-top:6px;font-size:11px;min-height:14px;font-family:'JetBrains Mono',monospace;color:#22c55e;word-break:break-all;"></div>
+      <div id="svErr" style="font-size:11px;color:#ef4444;min-height:14px;"></div>
+      <div id="svEmbed" style="margin-top:8px;"></div>`;break;
     case 'xmap':
       html=`<label>座標（緯度,經度 格式）</label><input id="f1" placeholder="例：25.0330,121.5654">
       <div style="margin-top:6px;font-size:11px;color:var(--text2);">可從 Google Maps 點右鍵取得座標，貼上即可。</div>`;break;
@@ -1543,8 +1492,8 @@ function openModal(tag){
           🐱 直接拖放或選擇檔案，自動上傳到 Catbox 並取得連結。支援圖片（jpg/png/gif/webp）與影片（mp4/mov）。單檔最大 200MB，永久儲存。
         </div>
         <div id="cbDropZone"
-          
-          
+          ondragover="event.preventDefault();this.classList.add('cb-drag-over')"
+          ondragleave="this.classList.remove('cb-drag-over')"
           ondrop="cbHandleDrop(event)"
           onclick="document.getElementById('cbFileInput').click()"
           style="border:2px dashed var(--border);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;">
@@ -1649,7 +1598,6 @@ function openModal(tag){
   setTimeout(()=>{
     if(tag==='gallery')renderGallery(document.getElementById('galGrid'));
     if(tag==='xtable'){initTable(2);}
-
     if(tag==='colorpicker'){document.getElementById('colorCustom').addEventListener('input',e=>{selectColor(e.target.value);});}
     const f=document.getElementById('f1')||document.getElementById('piUrl')||document.getElementById('tblHead');
     if(f)f.focus();
@@ -2046,41 +1994,6 @@ function updatePreview(){
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
-// Event delegation for Sendvid modal (works regardless of innerHTML timing)
-document.addEventListener('click', function(e){
-  // svDropZone click → trigger file input
-  if(e.target.closest('#svDropZone')){
-    const inp=document.getElementById('svFileInput');
-    if(inp){ inp.value=''; inp.click(); }
-  }
-});
-document.addEventListener('change', function(e){
-  // svFileInput change → upload
-  if(e.target && e.target.id==='svFileInput'){
-    if(e.target.files&&e.target.files[0]) svHandleFile(e.target.files[0]);
-  }
-});
-document.addEventListener('dragover', function(e){
-  if(e.target.closest && e.target.closest('#svDropZone')){
-    e.preventDefault();
-    e.target.closest('#svDropZone').classList.add('cb-drag-over');
-  }
-});
-document.addEventListener('dragleave', function(e){
-  if(e.target.closest && e.target.closest('#svDropZone')){
-    e.target.closest('#svDropZone').classList.remove('cb-drag-over');
-  }
-});
-document.addEventListener('drop', function(e){
-  const dz = e.target.closest && e.target.closest('#svDropZone');
-  if(dz){
-    e.preventDefault();
-    dz.classList.remove('cb-drag-over');
-    const file=[...e.dataTransfer.files].find(f=>f.type.startsWith('video/'));
-    if(!file){ const err=document.getElementById('svAutoErr'); if(err)err.textContent='❌ 請拖入影片檔案'; return; }
-    svHandleFile(file);
-  }
-});
 buildLeftPanel();
 // Restore editor content
 try{
@@ -2088,117 +2001,12 @@ try{
   if(saved){editor.value=saved;updatePreview();updateStats();}
 }catch(e){}
 pushUndo(editor.value||'');
-
-
-/* ═══════════════════════════════════════════
-   SENDVID AUTO UPLOAD
-═══════════════════════════════════════════ */
-/* ═══════════════════════════════════════════
-   SENDVID AUTO UPLOAD
-═══════════════════════════════════════════ */
-let svUploadedUrl = null;
-let svUploadedId  = null;
-
-function svSwitchTab(tab){
-  const isAuto = tab === 'auto';
-  const btnAuto   = document.getElementById('svTabAuto');
-  const btnManual = document.getElementById('svTabManual');
-  const paneAuto  = document.getElementById('svPaneAuto');
-  const paneManual= document.getElementById('svPaneManual');
-  if(!btnAuto) return;
-  btnAuto.style.background   = isAuto ? 'var(--gold)' : 'var(--surface2)';
-  btnAuto.style.color        = isAuto ? '#000'        : 'var(--text2)';
-  btnAuto.style.fontWeight   = isAuto ? '700'         : '600';
-  btnManual.style.background = isAuto ? 'var(--surface2)' : 'var(--gold)';
-  btnManual.style.color      = isAuto ? 'var(--text2)'    : '#000';
-  btnManual.style.fontWeight = isAuto ? '600'              : '700';
-  paneAuto.style.display  = isAuto  ? '' : 'none';
-  paneManual.style.display= isAuto  ? 'none' : '';
-}
-
-function svHandleDrop(e){
-  e.preventDefault();
-  e.currentTarget.classList.remove('cb-drag-over');
-  const file = [...e.dataTransfer.files].find(f => f.type.startsWith('video/'));
-  if(!file){ document.getElementById('svAutoErr').textContent='❌ 請拖入影片檔案'; return; }
-  svHandleFile(file);
-}
-
-function svHandleFile(file){
-  if(!file) return;
-  const workerUrl = 'https://sendvid-proxy.good406441.workers.dev/';
-  document.getElementById('svAutoErr').textContent='';
-  document.getElementById('svResult').style.display='none';
-  const statusEl   = document.getElementById('svUploadStatus');
-  const statusText = document.getElementById('svStatusText');
-  const progressBar= document.getElementById('svProgressBar');
-  statusEl.style.display='';
-  statusText.textContent='⬆ 上傳中...';
-  progressBar.style.width='5%';
-
-  const fd = new FormData();
-  fd.append('file', file, file.name);
-
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', workerUrl);
-
-  xhr.upload.onprogress = (e)=>{
-    if(e.lengthComputable){
-      const pct = Math.round(e.loaded/e.total*90)+5;
-      progressBar.style.width = Math.min(pct,95) + '%';
-      statusText.textContent = '⬆ 上傳中 ' + Math.round(e.loaded/e.total*100) + '%';
-    }
-  };
-
-
-  xhr.onload = ()=>{
-    progressBar.style.width='100%';
-    try {
-      const res = JSON.parse(xhr.responseText);
-      if(res.success && res.url){
-        svUploadedUrl = res.url;
-        svUploadedId  = res.id || extractSendvidId(res.url);
-        statusText.textContent='✅ 上傳完成！';
-        const embedEl = document.getElementById('svEmbed2');
-        if(svUploadedId){
-          embedEl.innerHTML='<iframe src="https://sendvid.com/embed/'+svUploadedId+'"'+
-            ' style="width:100%;height:160px;border-radius:6px;border:none;" allowfullscreen></iframe>';
-        }
-        document.getElementById('svResult').style.display='';
-      } else {
-        statusEl.style.display='none';
-        // Show full debug info
-        const errEl = document.getElementById('svAutoErr');
-        alert('=== Sendvid Debug ===\n' + JSON.stringify(res, null, 2));
-        errEl.textContent = '❌ ' + (res.error||'上傳失敗') + '（詳見彈出視窗）';
-      }
-    } catch(err){
-      statusEl.style.display='none';
-      document.getElementById('svAutoErr').innerHTML='❌ 回應解析失敗<br><textarea style="width:100%;height:60px;font-size:9px;margin-top:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px;">' + xhr.responseText.slice(0,300) + '</textarea>';
-    }
-  };
-
-  xhr.onerror = ()=>{
-    statusEl.style.display='none';
-    document.getElementById('svAutoErr').textContent='❌ 網路錯誤，請確認 Worker 網址是否正確';
-  };
-
-  xhr.send(fd);
-}
-
-function svInsertResult(){
-  if(!svUploadedId){ showToast('❌ 尚無上傳結果'); return; }
-  insertAtCursor('[xsendvid]'+svUploadedId+'[/xsendvid]\n');
-  addToGallery(svUploadedId, 'vid');
-  updatePreview();
-  closeModal();
-  showToast('✅ 已插入 Sendvid 影片');
-}
 </script>
 
 <!-- OpenCC S2T -->
 <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.min.js"></script>
-<script>let _s2tConv=null;
+<script>
+let _s2tConv=null;
 function _getS2TConv(){if(!_s2tConv){try{_s2tConv=OpenCC.Converter({from:'cn',to:'tw'});}catch(e){_s2tConv=null;}}return _s2tConv;}
 function convertS2T(){const conv=_getS2TConv();if(!conv){showToast('❌ OpenCC 載入失敗，請檢查網路');return;}try{const pos=editor.selectionStart;editor.value=conv(editor.value);editor.selectionStart=editor.selectionEnd=pos;updatePreview();updateStats();showToast('✅ 已轉換為繁體中文');}catch(e){showToast('❌ 轉換失敗');}}
 
@@ -2230,7 +2038,8 @@ function closeGameOnOverlay(e){
   if(e.target===document.getElementById('gameOverlay')){
     document.getElementById('gameOverlay').classList.remove('open');
   }
-}</script>
+}
+</script>
 
 <!-- ═══ GAME ZONE ═══ -->
 <div class="game-overlay" id="gameOverlay" onclick="closeGameOnOverlay(event)">
