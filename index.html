@@ -2222,9 +2222,12 @@ function updatePreview(){
   });
   // dialog
   // xvimg 雙頁書本版面（支援 [url=...][xvimg-l]URL[/xvimg-l][/url] 格式）
+  const beforeXvimg = h;
   h=h.replace(/\[url=([^\]]+)\]\[xvimg-l\]([\s\S]*?)\[\/xvimg-l\]\[\/url\]\s*\[url=([^\]]+)\]\[xvimg-r\]([\s\S]*?)\[\/xvimg-r\]\[\/url\]/g,(_,la,lSrc,ra,rSrc)=>{
     return `<div class="xvimg-spread"><div class="xvimg-cell"><a href="${la}" target="_blank" class="xvimg-link"></a><img class="xvimg-page" src="${lSrc.trim()}" onerror="this.style.display='none'"></div><div class="xvimg-cell"><a href="${ra}" target="_blank" class="xvimg-link"></a><img class="xvimg-page" src="${rSrc.trim()}" onerror="this.style.display='none'"></div></div>`;
   });
+  if(beforeXvimg!==h)console.log('[xvimg-debug] url+xvimg-l/r matched ✅');
+  else if(h.includes('[xvimg-l]'))console.log('[xvimg-debug] xvimg-l exists but url+xvimg NOT matched ❌, h=',h.substring(0,200));
   // 裸 xvimg-l/r 配對（不帶 url 外連）
   h=h.replace(/\[xvimg-l\]([\s\S]*?)\[\/xvimg-l\]\s*\[xvimg-r\]([\s\S]*?)\[\/xvimg-r\]/g,(_,l,r)=>{
     return `<div class="xvimg-spread"><div class="xvimg-cell"><img class="xvimg-page" src="${l.trim()}" onerror="this.style.display='none'"></div><div class="xvimg-cell"><img class="xvimg-page" src="${r.trim()}" onerror="this.style.display='none'"></div></div>`;
