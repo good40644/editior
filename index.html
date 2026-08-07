@@ -291,11 +291,11 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
 #preview .quote-box,#previewOverlayBody .quote-box{border:1px solid #ddd;border-radius:4px;background:#f9f9f9;padding:10px 14px;margin:8px 0;color:#555;font-size:13px;}
 #preview .xquote-box,#previewOverlayBody .xquote-box{border-left:3px solid #ccc;padding:4px 14px;margin:8px 0;color:#666;font-size:13px;font-style:italic;}
 #preview .hide-box,#previewOverlayBody .hide-box{background:#fff8e1;border:1px dashed #f0c040;border-radius:4px;padding:10px 14px;margin:8px 0;color:#888;font-size:12px;text-align:center;}
-#preview .xvimg-spread,#previewOverlayBody .xvimg-spread{display:flex;flex-direction:row;gap:0;margin:6px 0;border:8px solid #fff;box-shadow:0 1px 8px rgba(0,0,0,.2);border-radius:4px;overflow:hidden;width:82%;}
-#preview .xvimg-spread a,#previewOverlayBody .xvimg-spread a{flex:1;min-width:0;width:50%;display:block;overflow:hidden;}
-#preview .xvimg-spread .xvimg-page,#previewOverlayBody .xvimg-spread .xvimg-page{width:100%;height:auto;display:block;object-fit:contain;}
+#preview .xvimg-spread,#previewOverlayBody .xvimg-spread{display:flex;flex-direction:row;flex-wrap:nowrap;gap:0;margin:6px 0;border:8px solid #fff;box-shadow:0 1px 8px rgba(0,0,0,.2);border-radius:4px;overflow:hidden;width:70%;max-width:600px;}
+#preview .xvimg-spread a,#previewOverlayBody .xvimg-spread a{flex:0 0 50%;max-width:50%;display:block;overflow:hidden;}
+#preview .xvimg-spread .xvimg-page,#previewOverlayBody .xvimg-spread .xvimg-page{width:100%;height:auto;display:block;object-fit:cover;}
 @media(max-width:768px){
-  #preview .xvimg-spread,#previewOverlayBody .xvimg-spread{width:100%;border:5px solid #fff;}
+  #preview .xvimg-spread,#previewOverlayBody .xvimg-spread{width:100%;max-width:none;border:5px solid #fff;}
 }
 #preview .xleft-bubble,#previewOverlayBody .xleft-bubble{display:flex;justify-content:flex-start;margin:4px 0;}
 #preview .xleft-bubble span{background:#f0f0f0;border-radius:0 12px 12px 12px;padding:8px 14px;max-width:70%;font-size:13px;color:#333;}
@@ -307,16 +307,16 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
 #preview .xtable tr:nth-child(even) td{background:#fafafa;}
 #preview .media-ph,#previewOverlayBody .media-ph{background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin:6px 0;font-size:12px;color:#888;text-align:center;}
 /* 一般圖片 */
-#preview img.forum-img,#previewOverlayBody img.forum-img{max-width:65%;border-radius:4px;margin:4px 0;display:block;}
-#preview video.forum-img,#previewOverlayBody video.forum-img{max-width:65%;border-radius:6px;margin:4px 0;display:block;}
+#preview img.forum-img,#previewOverlayBody img.forum-img{max-width:45%;border-radius:4px;margin:4px 0;display:block;}
+#preview video.forum-img,#previewOverlayBody video.forum-img{max-width:45%;border-radius:6px;margin:4px 0;display:block;}
 /* 置中大圖 ximg - 最大，置中 */
 #preview img.forum-img.ximg-img,#previewOverlayBody img.forum-img.ximg-img,
 #preview a img.forum-img.ximg-img,#previewOverlayBody a img.forum-img.ximg-img{max-width:91% !important;border-radius:4px;margin:4px auto !important;display:block;border:8px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.18);}
-/* 靠左美圖 - 縮小20% */
+/* 靠左美圖 - 縮小50% */
 #preview img.forum-img.ovimg-img,#previewOverlayBody img.forum-img.ovimg-img,
-#preview a img.forum-img.ovimg-img,#previewOverlayBody a img.forum-img.ovimg-img{max-width:65% !important;border-radius:4px;margin:4px 0;display:block;border:8px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.18);}
+#preview a img.forum-img.ovimg-img,#previewOverlayBody a img.forum-img.ovimg-img{max-width:45% !important;border-radius:4px;margin:4px 0;display:block;border:8px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.18);}
 #preview img.forum-img.oimg-img,#previewOverlayBody img.forum-img.oimg-img,
-#preview a img.forum-img.oimg-img,#previewOverlayBody a img.forum-img.oimg-img{max-width:65% !important;border-radius:4px;margin:4px 0;display:block;border:8px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.18);}
+#preview a img.forum-img.oimg-img,#previewOverlayBody a img.forum-img.oimg-img{max-width:45% !important;border-radius:4px;margin:4px 0;display:block;border:8px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.18);}
 @media(max-width:768px){
   #preview img.forum-img,#previewOverlayBody img.forum-img{max-width:100%;max-height:60vw;width:auto;object-fit:contain;margin:4px 0;}
   #preview video.forum-img,#previewOverlayBody video.forum-img{max-width:100%;max-height:60vw;}
@@ -780,7 +780,23 @@ function renderPanel4Gallery(){
         const ytId=g.url.replace(/\s/g,'');
         thumbHtml=`<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=gal-thumb-ph>▶️</div>'">`;
       } else if(g.type==='vid'){
-        thumbHtml=`<div class="gal-thumb-ph">🎥</div>`;
+        thumbHtml=`<div class="gal-thumb-ph" id="gvt_${i}">⏳</div>`;
+        setTimeout((()=>{const url=g.url,idx=i;return ()=>{
+          const ph=document.getElementById('gvt_'+idx);if(!ph)return;
+          const v=document.createElement('video');
+          v.src=url;v.crossOrigin='anonymous';v.muted=true;v.playsInline=true;
+          v.addEventListener('loadeddata',()=>{v.currentTime=0.5;});
+          v.addEventListener('seeked',()=>{
+            try{const c=document.createElement('canvas');c.width=120;c.height=80;
+            c.getContext('2d').drawImage(v,0,0,120,80);
+            const img=document.createElement('img');img.src=c.toDataURL();
+            img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;';
+            if(ph&&ph.parentElement){ph.parentElement.innerHTML='';ph.parentElement.appendChild(img);}
+            v.remove();}catch(e){if(ph)ph.textContent='🎥';}
+          });
+          v.addEventListener('error',()=>{if(ph)ph.textContent='🎥';});
+          v.load();
+        };})(),200);
       } else if(g.type==='sendvid'){
         thumbHtml=`<div class="gal-thumb-ph">📺</div>`;
       } else if(g.type==='tt'){
@@ -805,8 +821,47 @@ function renderPanel4Gallery(){
 
 function galInsert(i){
   const g=gallery[i];if(!g)return;
-  const bbMap={img:`[ximg]${g.url}[/ximg]\n`,vid:`[xmp4]${g.url}[/xmp4]\n`,yt:`[xyoutube]${g.url}[/xyoutube]\n`,tt:`[xtiktok]${g.url}[/xtiktok]\n`,sendvid:`[xsendvid]${g.url}[/xsendvid]\n`};
-  insertAtCursor(bbMap[g.type]||`[ximg]${g.url}[/ximg]\n`);
+  // 影片類型直接插入，不彈選項
+  if(g.type!=='img'){
+    const bbMap={vid:`[xmp4]${g.url}[/xmp4]\n`,yt:`[xyoutube]${g.url}[/xyoutube]\n`,tt:`[xtiktok]${g.url}[/xtiktok]\n`,sendvid:`[xsendvid]${g.url}[/xsendvid]\n`};
+    insertAtCursor(bbMap[g.type]||`[xmp4]${g.url}[/xmp4]\n`);
+    showToast('✅ 已插入！');
+    return;
+  }
+  // 圖片：彈出選項視窗
+  const existing=document.getElementById('galPickerOverlay');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='galPickerOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;width:300px;max-width:90vw;">
+      <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:14px;">選擇圖片格式</div>
+      <img src="${g.url}" style="width:100%;max-height:120px;object-fit:contain;border-radius:6px;margin-bottom:14px;background:#111;" onerror="this.style.display='none'">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="galDoInsert(${i},'normal')" style="padding:9px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;text-align:left;">🖼 一般圖片 <span style="color:var(--text2);font-size:10px;">[url][img]...[/img][/url]</span></button>
+        <button onclick="galDoInsert(${i},'ximg')" style="padding:9px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;text-align:left;">🖼 置中大圖 <span style="color:var(--text2);font-size:10px;">[ximg]</span></button>
+        <button onclick="galDoInsert(${i},'ovimg')" style="padding:9px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;text-align:left;">🎞 靠左美圖（直） <span style="color:var(--text2);font-size:10px;">[ovimg]</span></button>
+        <button onclick="galDoInsert(${i},'oimg')" style="padding:9px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;text-align:left;">🖼 靠左美圖（橫） <span style="color:var(--text2);font-size:10px;">[oimg]</span></button>
+        <button onclick="document.getElementById('galPickerOverlay').remove()" style="padding:7px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;">取消</button>
+      </div>
+    </div>`;
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+}
+
+function galDoInsert(i,type){
+  const g=gallery[i];if(!g)return;
+  const overlay=document.getElementById('galPickerOverlay');
+  if(overlay)overlay.remove();
+  let code='';
+  if(type==='normal'){
+    // 一般圖片：[url=URL][img]URL[/img][/url]
+    code=`[url=${g.url}][img]${g.url}[/img][/url]\n`;
+  } else {
+    code=`[${type}]${g.url}[/${type}]\n`;
+  }
+  insertAtCursor(code);
   showToast('✅ 已插入！');
 }
 function galDelete(i){
