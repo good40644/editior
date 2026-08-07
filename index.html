@@ -291,10 +291,10 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
 #preview .quote-box,#previewOverlayBody .quote-box{border:1px solid #ddd;border-radius:4px;background:#f9f9f9;padding:10px 14px;margin:8px 0;color:#555;font-size:13px;}
 #preview .xquote-box,#previewOverlayBody .xquote-box{border-left:3px solid #ccc;padding:4px 14px;margin:8px 0;color:#666;font-size:13px;font-style:italic;}
 #preview .hide-box,#previewOverlayBody .hide-box{background:#fff8e1;border:1px dashed #f0c040;border-radius:4px;padding:10px 14px;margin:8px 0;color:#888;font-size:12px;text-align:center;}
-#preview .xvimg-spread,#previewOverlayBody .xvimg-spread{display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;align-items:stretch;gap:0;margin:6px 0;border:8px solid #fff;box-shadow:0 1px 8px rgba(0,0,0,.2);border-radius:4px;overflow:hidden;width:60%;max-width:500px;box-sizing:border-box;}
-#preview .xvimg-spread>a,#previewOverlayBody .xvimg-spread>a{flex:0 0 50% !important;max-width:50% !important;min-width:0;display:block !important;overflow:hidden;box-sizing:border-box;}
-#preview .xvimg-spread>img,#previewOverlayBody .xvimg-spread>img{flex:0 0 50% !important;max-width:50% !important;min-width:0;display:block !important;overflow:hidden;box-sizing:border-box;}
-#preview .xvimg-spread .xvimg-page,#previewOverlayBody .xvimg-spread .xvimg-page{width:100% !important;max-width:100% !important;height:auto !important;max-height:none !important;display:block !important;object-fit:cover;border:none !important;box-shadow:none !important;margin:0 !important;}
+#preview .xvimg-spread,#previewOverlayBody .xvimg-spread{display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;gap:0;margin:6px 0;border:8px solid #fff;box-shadow:0 1px 8px rgba(0,0,0,.2);border-radius:4px;overflow:hidden;width:60%;max-width:500px;}
+#preview .xvimg-cell,#previewOverlayBody .xvimg-cell{flex:0 0 50% !important;width:50% !important;max-width:50% !important;min-width:0;position:relative;overflow:hidden;display:block;}
+#preview .xvimg-link,#previewOverlayBody .xvimg-link{position:absolute;inset:0;z-index:1;}
+#preview .xvimg-page,#previewOverlayBody .xvimg-page{width:100% !important;max-width:100% !important;height:auto !important;display:block !important;object-fit:cover;border:none !important;box-shadow:none !important;margin:0 !important;border-radius:0 !important;}
 @media(max-width:768px){
   #preview .xvimg-spread,#previewOverlayBody .xvimg-spread{width:100%;max-width:none;border:5px solid #fff;}
 }
@@ -2223,11 +2223,11 @@ function updatePreview(){
   // dialog
   // xvimg 雙頁書本版面（支援 [url=...][xvimg-l]URL[/xvimg-l][/url] 格式）
   h=h.replace(/\[url=([^\]]+)\]\[xvimg-l\]([\s\S]*?)\[\/xvimg-l\]\[\/url\]\s*\[url=([^\]]+)\]\[xvimg-r\]([\s\S]*?)\[\/xvimg-r\]\[\/url\]/g,(_,la,lSrc,ra,rSrc)=>{
-    return `<div class="xvimg-spread"><a href="${la}" target="_blank"><img class="xvimg-page" src="${lSrc.trim()}" onerror="this.style.display='none'"></a><a href="${ra}" target="_blank"><img class="xvimg-page" src="${rSrc.trim()}" onerror="this.style.display='none'"></a></div>`;
+    return `<div class="xvimg-spread"><div class="xvimg-cell"><a href="${la}" target="_blank" class="xvimg-link"></a><img class="xvimg-page" src="${lSrc.trim()}" onerror="this.style.display='none'"></div><div class="xvimg-cell"><a href="${ra}" target="_blank" class="xvimg-link"></a><img class="xvimg-page" src="${rSrc.trim()}" onerror="this.style.display='none'"></div></div>`;
   });
   // 裸 xvimg-l/r 配對（不帶 url 外連）
   h=h.replace(/\[xvimg-l\]([\s\S]*?)\[\/xvimg-l\]\s*\[xvimg-r\]([\s\S]*?)\[\/xvimg-r\]/g,(_,l,r)=>{
-    return `<div class="xvimg-spread"><img class="xvimg-page" src="${l.trim()}" onerror="this.style.display='none'"><img class="xvimg-page" src="${r.trim()}" onerror="this.style.display='none'"></div>`;
+    return `<div class="xvimg-spread"><div class="xvimg-cell"><img class="xvimg-page" src="${l.trim()}" onerror="this.style.display='none'"></div><div class="xvimg-cell"><img class="xvimg-page" src="${r.trim()}" onerror="this.style.display='none'"></div></div>`;
   });
   // 落單容錯
   h=h.replace(/\[url=([^\]]+)\]\[xvimg-l\]([\s\S]*?)\[\/xvimg-l\]\[\/url\]/g,(_,a,src)=>`<a href="${a}" target="_blank"><img class="forum-img ximg-img" src="${src.trim()}" onerror="this.style.display='none'"></a>`);
