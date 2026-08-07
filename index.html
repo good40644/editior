@@ -291,9 +291,10 @@ textarea#editor.dragging{border:2px dashed var(--gold)!important;}
 #preview .quote-box,#previewOverlayBody .quote-box{border:1px solid #ddd;border-radius:4px;background:#f9f9f9;padding:10px 14px;margin:8px 0;color:#555;font-size:13px;}
 #preview .xquote-box,#previewOverlayBody .xquote-box{border-left:3px solid #ccc;padding:4px 14px;margin:8px 0;color:#666;font-size:13px;font-style:italic;}
 #preview .hide-box,#previewOverlayBody .hide-box{background:#fff8e1;border:1px dashed #f0c040;border-radius:4px;padding:10px 14px;margin:8px 0;color:#888;font-size:12px;text-align:center;}
-#preview .xvimg-spread,#previewOverlayBody .xvimg-spread{display:flex;flex-direction:row;flex-wrap:nowrap;gap:0;margin:6px 0;border:8px solid #fff;box-shadow:0 1px 8px rgba(0,0,0,.2);border-radius:4px;overflow:hidden;width:70%;max-width:600px;}
-#preview .xvimg-spread a,#previewOverlayBody .xvimg-spread a{flex:0 0 50%;max-width:50%;display:block;overflow:hidden;}
-#preview .xvimg-spread .xvimg-page,#previewOverlayBody .xvimg-spread .xvimg-page{width:100%;height:auto;display:block;object-fit:cover;}
+#preview .xvimg-spread,#previewOverlayBody .xvimg-spread{display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;align-items:stretch;gap:0;margin:6px 0;border:8px solid #fff;box-shadow:0 1px 8px rgba(0,0,0,.2);border-radius:4px;overflow:hidden;width:60%;max-width:500px;box-sizing:border-box;}
+#preview .xvimg-spread>a,#previewOverlayBody .xvimg-spread>a{flex:0 0 50% !important;max-width:50% !important;min-width:0;display:block !important;overflow:hidden;box-sizing:border-box;}
+#preview .xvimg-spread>img,#previewOverlayBody .xvimg-spread>img{flex:0 0 50% !important;max-width:50% !important;min-width:0;display:block !important;overflow:hidden;box-sizing:border-box;}
+#preview .xvimg-spread .xvimg-page,#previewOverlayBody .xvimg-spread .xvimg-page{width:100% !important;max-width:100% !important;height:auto !important;max-height:none !important;display:block !important;object-fit:cover;border:none !important;box-shadow:none !important;margin:0 !important;}
 @media(max-width:768px){
   #preview .xvimg-spread,#previewOverlayBody .xvimg-spread{width:100%;max-width:none;border:5px solid #fff;}
 }
