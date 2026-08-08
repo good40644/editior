@@ -781,23 +781,37 @@ function renderPanel4Gallery(){
         const ytId=g.url.replace(/\s/g,'');
         thumbHtml=`<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=gal-thumb-ph>▶️</div>'">`;
       } else if(g.type==='vid'){
-        thumbHtml=`<div class="gal-thumb-ph" id="gvt_${i}">⏳</div>`;
-        setTimeout((()=>{const url=g.url,idx=i;return ()=>{
-          const ph=document.getElementById('gvt_'+idx);if(!ph)return;
+        const vidId='gvt_'+i+'_'+Date.now();
+        thumbHtml=`<div class="gal-thumb-ph" id="${vidId}" style="font-size:11px;color:#aaa;">⏳</div>`;
+        setTimeout((function(url,tid){return function(){
+          const ph=document.getElementById(tid);
+          if(!ph)return;
           const v=document.createElement('video');
-          v.src=url;v.crossOrigin='anonymous';v.muted=true;v.playsInline=true;
-          v.addEventListener('loadeddata',()=>{v.currentTime=0.5;});
-          v.addEventListener('seeked',()=>{
-            try{const c=document.createElement('canvas');c.width=120;c.height=80;
-            c.getContext('2d').drawImage(v,0,0,120,80);
-            const img=document.createElement('img');img.src=c.toDataURL();
-            img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;';
-            if(ph&&ph.parentElement){ph.parentElement.innerHTML='';ph.parentElement.appendChild(img);}
-            v.remove();}catch(e){if(ph)ph.textContent='🎥';}
+          v.src=url;
+          v.muted=true;
+          v.playsInline=true;
+          v.preload='metadata';
+          v.addEventListener('loadeddata',function(){v.currentTime=1;});
+          v.addEventListener('seeked',function(){
+            try{
+              const c=document.createElement('canvas');
+              c.width=128;c.height=96;
+              c.getContext('2d').drawImage(v,0,0,128,96);
+              const img=document.createElement('img');
+              img.src=c.toDataURL('image/jpeg',0.8);
+              img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;border-radius:4px;';
+              if(ph&&ph.isConnected){
+                ph.style.padding='0';
+                ph.style.fontSize='';
+                ph.innerHTML='';
+                ph.appendChild(img);
+              }
+              v.remove();
+            }catch(e){if(ph)ph.textContent='🎥';}
           });
-          v.addEventListener('error',()=>{if(ph)ph.textContent='🎥';});
+          v.addEventListener('error',function(){if(ph)ph.textContent='🎥';});
           v.load();
-        };})(),200);
+        };})(g.url,vidId),300);
       } else if(g.type==='sendvid'){
         thumbHtml=`<div class="gal-thumb-ph">📺</div>`;
       } else if(g.type==='tt'){
