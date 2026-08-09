@@ -1962,7 +1962,7 @@ async function imgeUploadOne(file,key){
   try{
     if(bar)bar.style.width='50%';
     const fd=new FormData();
-    fd.append('source',file);
+    fd.append('image',file);
 
     const res=await fetch(IMGE_API,{
       method:'POST',
