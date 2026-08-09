@@ -1973,22 +1973,23 @@ async function imgeUploadOne(file,key){
     });
     const json=await res.json();
 
-    if(json.status_code===200&&json.image&&json.image.url){
-      const url=json.image.url;
+    if(json.success&&json.data&&json.data.direct_url){
+      const url=json.data.direct_url;
+      const viewerUrl=json.data.viewer_url||url;
       if(bar){bar.style.width='100%';bar.style.background='#22c55e';}
       if(st){st.textContent='✅ 上傳成功！';st.style.color='#22c55e';}
       if(result){
         result.innerHTML=`<div class="cb-url-row">
           <span class="cb-url-box" title="${url}" onclick="navigator.clipboard&&navigator.clipboard.writeText('${url}').then(()=>showToast('✅ 已複製連結'))">${url}</span>
-          <button class="cb-insert-btn" onclick="imgeInsertOne('${url}')">插入</button>
+          <button class="cb-insert-btn" onclick="imgeInsertOne('${url}','${viewerUrl}')">插入</button>
         </div>`;
       }
       addToGallery(url,'img');
-      imgeDoneUrls.push(url);
+      imgeDoneUrls.push({url,viewerUrl});
       const insertAll=document.getElementById('imgeInsertAll');
       if(insertAll)insertAll.style.display='block';
     } else {
-      const errMsg=(json.error&&json.error.message)||json.status_txt||JSON.stringify(json);
+      const errMsg=(json.data&&json.data.error&&json.data.error.message)||json.error||'上傳失敗';
       if(bar){bar.style.width='100%';bar.style.background='#ef4444';}
       if(st){st.textContent=`❌ ${errMsg}`;st.style.color='#ef4444';}
     }
@@ -1997,14 +1998,17 @@ async function imgeUploadOne(file,key){
     if(st){st.textContent=`❌ 錯誤：${err.message}`;st.style.color='#ef4444';}
   }
 }
-function imgeInsertOne(url){
-  insertAtCursor(`[ximg]${url}[/ximg]\n`);
+function imgeInsertOne(url,viewerUrl){
+  const code=viewerUrl?`[url=${viewerUrl}][img]${url}[/img][/url]\n`:`[img]${url}[/img]\n`;
+  insertAtCursor(code);
   showToast('✅ 已插入！');
 }
 function imgeInsertAllDone(){
   if(!imgeDoneUrls.length){showToast('⚠️ 尚無完成的上傳');return;}
   let code='';
-  imgeDoneUrls.forEach(url=>{code+=`[ximg]${url}[/ximg]\n`;});
+  imgeDoneUrls.forEach(({url,viewerUrl})=>{
+    code+=viewerUrl?`[url=${viewerUrl}][img]${url}[/img][/url]\n`:`[img]${url}[/img]\n`;
+  });
   insertAtCursor(code);
   showToast(`✅ 已插入 ${imgeDoneUrls.length} 張圖片！`);
   closeModal();
