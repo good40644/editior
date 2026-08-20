@@ -725,7 +725,7 @@ function renderGallery(container){
     const shortName=g.url.split('/').pop().split('?')[0].slice(0,20)||g.url.slice(0,20);
     if(g.type==='img'){
       d.innerHTML=`<img src="${g.url}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentElement.innerHTML='<div class=\\'gal-placeholder\\'><span style=\\'font-size:26px;\\'>🖼</span><span>${shortName}</span></div>'+\`${delBtn}\`">${delBtn}<div class="gal-label">${shortName}</div>`;
-      d.onclick=()=>{insertAtCursor(`[ximg]${g.url}[/ximg]\n`);closeModal();};
+      d.onclick=()=>{closeModal();galInsert(i);};
     } else if(g.type==='vid'){
       const vidIdx='gvc'+i+'_'+Date.now();
       d.innerHTML=`<canvas id="${vidIdx}" style="width:100%;height:100%;display:block;background:#111;"></canvas><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;pointer-events:none;text-shadow:0 1px 4px #000;">▶</div>${delBtn}<div class="gal-label">${shortName}</div>`;
