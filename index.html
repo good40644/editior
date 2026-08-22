@@ -2315,18 +2315,13 @@ function updatePreview(){
   h=h.replace(/\[xhr\]x\[\/xhr\]/g,'<hr class="xhr-line">');
   // 禁止符號檢查（模擬論壇失效行為）
   const FORBIDDEN=/[&=`'"()+\-\/<>]/;
-  // 檢查內容是否含有違規字元
-  // [] 符號特別處理：若含有 [ 或 ]，先把所有合法配對 BBCode 標籤移除，
-  // 移除後若還有殘留的 [ 或 ] 才視為違規
   const hasForbidden=str=>{
-    if(FORBIDDEN.test(str))return true;
-    if(str.includes('[')&&str.includes(']')){
-      // 移除所有合法 BBCode 標籤對（含屬性）後，檢查是否還有殘留 [ 或 ]
-      const stripped=str.replace(/\[[a-zA-Z\/][a-zA-Z0-9]*(?:=[^\]]+)?\]/g,'');
-      if(stripped.includes('[')||stripped.includes(']'))return true;
-    } else if(str.includes('[')||str.includes(']')){
-      return true; // 單邊括號，非法
-    }
+    // 先移除所有 BBCode 標籤（含屬性，如 [size=5], [color=#ff0000], [/b]）
+    const stripped=str.replace(/\[[^\]]*\]/g,'');
+    // 再檢查剩餘純文字是否含違規符號
+    if(FORBIDDEN.test(stripped))return true;
+    // 檢查裸露的 [ 或 ]（移除標籤後若還有殘留）
+    if(stripped.includes('[')||stripped.includes(']'))return true;
     return false;
   };
   // 失效時原樣輸出（還原 HTML entity 回原始字元供顯示）
